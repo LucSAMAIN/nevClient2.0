@@ -19,6 +19,8 @@ class NevPulsePlot(plot.plotcanvas.PlotCanvas):
         The color to plot for every impulsion vizualisation.
     title : str
         The title of the plot... (really optionnal)
+    T     : int
+        The total duration of the pulse.
     """
     def __init__(self,
                  nbPulses = 0, 
@@ -27,6 +29,7 @@ class NevPulsePlot(plot.plotcanvas.PlotCanvas):
                  amps = [], # mV,
                  colors = [], 
                  title="Pulse imp vizualisation", 
+                 T : int = 20,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -44,6 +47,7 @@ class NevPulsePlot(plot.plotcanvas.PlotCanvas):
         self.yAxisName = "Amplitude (mv)"
         self.title = title
         self.colors = colors
+        self.T      = T
         
         
         self.PlotData()
@@ -79,7 +83,7 @@ class NevPulsePlot(plot.plotcanvas.PlotCanvas):
 
 
 
-        maxXValue = (max(self.delays)+max(self.widths))+10
+        maxXValue = self.T
         maxYValue = max(self.amps) + 10
 
 
@@ -103,12 +107,13 @@ class NevPulsePlot(plot.plotcanvas.PlotCanvas):
         self.Draw(graphics, xAxis=(-maxXValue*0.2, maxXValue), yAxis=(-maxYValue*0.2, maxYValue))
         
 
-    def UpdateData(self, nbPulses, delays, widths, amps, colors):
+    def UpdateData(self, nbPulses, delays, widths, amps, colors, T):
         self.nbPulses = nbPulses
         self.delays = delays
         self.widths = widths
         self.amps = amps
         self.colors = colors
+        self.T      = T
 
         self.PlotData()
 

@@ -6,6 +6,7 @@ import os
 import wx
 # factories
 from nevclient.factories.ParametersFactory import ParametersFactory
+from nevclient.factories.PulseFactory import PulseFactory
 # logger
 from nevclient.utils.Logger import Logger
 from nevclient.utils.Logger import log_debug_event
@@ -35,7 +36,11 @@ from nevclient.model.Enums.NISCOPEChannelVerticalRange import NISCOPEChannelVert
 # services
 from nevclient.services.DataManipulation.DAQMXDataServices import DAQMXDataServices
 from nevclient.services.DataManipulation.PSADataServices import PSADataServices
+from nevclient.services.DataManipulation.PulseDataServices import PulseDataServices
 from nevclient.services.Communication.DAQMXComm import DAQMXComm
+# pulses
+from nevclient.model.config.Pulse.PulseData import PulseData
+from nevclient.model.config.Pulse.PulseConf import PulseConf
 
 class Controller():
     """
@@ -44,12 +49,14 @@ class Controller():
 
     Attributes
     ----------
-    niscopeSys : NISCOPESys
-    daqmxSys   : DAQMXSys
-    psaData    : PSAData
-    paramFac   : ParametersFactory
-    psaDMServ  : PSADataServices
-    daqmxComm  : DAQMXComm
+    niscopeSys  : NISCOPESys
+    daqmxSys    : DAQMXSys
+    psaData     : PSAData
+    paramFac    : ParametersFactory
+    psaDMServ   : PSADataServices
+    daqmxComm   : DAQMXComm
+    pulseFac    : PulseFactory
+    pulseDMServ : PulseDataServices
     """
 
     def __init__(self,
@@ -59,21 +66,28 @@ class Controller():
                  paramFac    : ParametersFactory,
                  psaDMServ   : PSADataServices,
                  daqmxComm   : DAQMXComm,
-                 daqmxDMServ : DAQMXDataServices):
+                 daqmxDMServ : DAQMXDataServices,
+                 pulseFac    : PulseFactory,
+                 pulseDMServ : PulseDataServices):
         self.logger = Logger("Controller")
 
         self.paramFac    = paramFac
+        self.pulseFac    = pulseFac
+
         self.niscopeSys  = niscopeSys
         self.daqmxSys    = daqmxSys
         self.psaData     = psaData
  
         self.psaDMServ   = psaDMServ
         self.daqmxDMServ = daqmxDMServ
+        self.pulseDMServ = pulseDMServ
+
         self.daqmxComm   = daqmxComm
         
         self.entryFrame     : EntryFrame     = None # later set
         self.parametersData : ParametersData = None # same
         self.csvWorker      : CSVWorker      = None # same
+        self.pulseData      : PulseData      = None
         
 
 
@@ -108,7 +122,7 @@ class Controller():
 # ──────────────────────────────────────────────────────────── Event handlers ──────────────────────────────────────────────────────────
 # ---- ENTRY FRAME
     def OnEntryFrameOpenItemParametersMenu(self, fileName : str, dirName : str):
-        # Manipulation of the model:
+        # ---- Manipulation of the model:
         # Build the parameters data
         filePath : str = os.path.join(dirName, fileName)
         self.csvWorker = CSVWorker(filePath)
@@ -120,17 +134,22 @@ class Controller():
                                                                 csv=self.csvWorker,
                                                                 tag=psaMode.GetTag(),
                                                                 parametersData=self.parametersData)
+        # Build the pulse data instance:
+        self.pulseData = self.pulseFac.BuildPulseData(self.parametersData)
+        # Dynamic DAQMX devices:
+        self.pulseDMServ.UpdateDAQMXStim(self.pulseData, daqmxDMServ=self.daqmxDMServ, daqmxSys=self.daqmxSys)
 
 
-        # And then we can update the different views
-        # The parameters panel & the entry frame
+
+        # ---- And then we can update the different views
+        # Parameters panel & Entry frame
         parametersPanel = ParametersPanel(parent=self.entryFrame.GetPanel(), 
                                           controller=self, 
                                           style=wx.SUNKEN_BORDER,
                                           parametersData=self.parametersData)  
         self.entryFrame.ReplaceParametersPanel(parametersPanel)  
         self.entryFrame.Layout()
-        # Sweeper conf:
+        # Sweeper panel:
         curPSAMode : PSAMode        = self.psaData.GetCurPsaMode()
         choices    : list[str]      = list(curPSAMode.GetSweepMap().keys())
         curParam   : CSVParameter   = curPSAMode.GetCurParam()
@@ -142,8 +161,12 @@ class Controller():
                                                                              stop,
                                                                              steps,
                                                                              sweepDi)
+        # Pulse panel
+        self.entryFrame.GetPulsePanel().UpdateOnLoadingParameters(self.pulseData)
+
         
         
+
 
 # ---- SWEEPER PANEL
     # SWEEPER CONF
@@ -299,6 +322,8 @@ class Controller():
 
 
 
+
+
 # ---- Parameters panel
     @log_debug_event
     def OnParametersChangingSetUp(self, newSetupName : str):
@@ -410,3 +435,88 @@ class Controller():
     @log_debug_event
     def OnParametersUpdate(self):
         self.daqmxComm.UpdateBackendServer(self.daqmxSys, self.daqmxDMServ)
+
+
+
+
+
+    # ---- Pulse panel
+    # Common stim parameters
+    @log_debug_event
+    def OnPulseChangeDuration(self, duration : float):
+        self.pulseData.GetStimData().SetT(duration)
+        self.pulseData.GetCurParameter().GetName()
+        # ---- Update the view:
+        self.entryFrame.GetPulsePanel().UpdateAll(self.pulseData)
+
+    @log_debug_event
+    def OnPulseChangeDt(self, dt : float):
+        self.pulseData.GetStimData().SetDt(dt)
+
+
+
+    # Pulses configuration
+    @log_debug_event
+    def OnPulseChangingParamBox(self, param : str):
+        # ---- Update the model
+        # Pulses data:
+        csvParam : CSVParameter      = self.parametersData.GetParametersMap()[param]
+        self.pulseData.SetCurParameter(csvParam)
+        # Dynamic DAQMX devices:
+        self.pulseDMServ.UpdateDAQMXStim(self.pulseData, daqmxDMServ=self.daqmxDMServ, daqmxSys=self.daqmxSys)
+
+        # ---- Update the view:
+        self.entryFrame.GetPulsePanel().UpdateAll(self.pulseData)
+    
+    @log_debug_event
+    def OnPulseChangingAmp(self, pulseId : int, amp : float):
+        # ---- Update the model
+        # Pulses data:
+        PData : PulseData = self.pulseData
+        PConf : PulseConf = PData.GetParamToPulsesConfigurationMap()[PData.GetCurParameter().GetName()][pulseId]
+        PConf.SetAmp(amp)
+        # Dynamic DAQMX devices:
+        self.pulseDMServ.UpdateDAQMXStim(self.pulseData, daqmxDMServ=self.daqmxDMServ, daqmxSys=self.daqmxSys)
+        
+        # ---- Update the view:
+        self.entryFrame.GetPulsePanel().UpdateAll(self.pulseData)
+
+    @log_debug_event
+    def OnPulseChangingWidth(self, pulseId : int, width : float):
+        # ---- Update the model
+        # Pulses data:
+        PData : PulseData = self.pulseData
+        PConf : PulseConf = PData.GetParamToPulsesConfigurationMap()[PData.GetCurParameter().GetName()][pulseId]
+        PConf.SetWidth(width)
+        # Dynamic DAQMX devices:
+        self.pulseDMServ.UpdateDAQMXStim(self.pulseData, daqmxDMServ=self.daqmxDMServ, daqmxSys=self.daqmxSys)
+        
+        # ---- Update the view:
+        self.entryFrame.GetPulsePanel().UpdateAll(self.pulseData)
+
+    @log_debug_event
+    def OnPulseChangingDelay(self, pulseId : int, delay : float):
+        # ---- Update the model
+        # Pulses data:
+        PData : PulseData = self.pulseData
+        PConf : PulseConf = PData.GetParamToPulsesConfigurationMap()[PData.GetCurParameter().GetName()][pulseId]
+        PConf.SetDelay(delay)
+        # Dynamic DAQMX devices:
+        self.pulseDMServ.UpdateDAQMXStim(self.pulseData, daqmxDMServ=self.daqmxDMServ, daqmxSys=self.daqmxSys)
+        
+        # ---- Update the view:
+        self.entryFrame.GetPulsePanel().UpdateAll(self.pulseData)
+
+    @log_debug_event
+    def OnPulseChangingActive(self, pulseId : int, active : bool):
+        # ---- Update the model
+        # Pulses data:
+        PData : PulseData = self.pulseData
+        PConf : PulseConf = PData.GetParamToPulsesConfigurationMap()[PData.GetCurParameter().GetName()][pulseId]
+        PConf.SetActive(active)
+        # Dynamic DAQMX devices:
+        self.pulseDMServ.UpdateDAQMXStim(self.pulseData, daqmxDMServ=self.daqmxDMServ, daqmxSys=self.daqmxSys)
+        
+        # ---- Update the view:
+        self.entryFrame.GetPulsePanel().UpdateAll(self.pulseData)
+

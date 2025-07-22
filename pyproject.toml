@@ -14,7 +14,8 @@ requires-python = ">=3.7"
 dependencies = [
     "wxPython>=4.2",
     "pandas>=2.0",
-    "numpy>=2.0"
+    "numpy>=2.0",
+    "colorsys"
 ]
 authors = [
   { name="SAMAIN Luc", email="luc.samain2@gmail.com" },

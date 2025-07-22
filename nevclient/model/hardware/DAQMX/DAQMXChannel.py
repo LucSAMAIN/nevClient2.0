@@ -25,14 +25,19 @@ class DAQMXChannel():
         The stimulus to add.
         Both of the data and stim array need to
         be of size dataLength.
+    index      : int
+        The index position of the channel for the
+        corresponding device.
     """
 
     def __init__(self, 
                  device     : DAQMXDevice,
                  dataLength : int,
                  data       : list[float],
-                 stim       : list[float]):
+                 stim       : list[float],
+                 index      : int):
         self.device     = device
+        self.index     = index
         self.dataLength = dataLength
         self.data       = data
         self.stim       = stim
@@ -47,6 +52,8 @@ class DAQMXChannel():
         return self.data
     def GetStim(self) -> list[float]:
         return self.stim
+    def GetIndex(self) -> int:
+        return self.index
 
 # ──────────────────────────────────────────────────────────── Setters ────────────────────────────────────────────────────────── 
 
@@ -58,3 +65,5 @@ class DAQMXChannel():
         self.data = data
     def SetStim(self, stim : list[float]):
         self.stim = stim
+    def SetIndex(self, index : int):
+        self.index = index

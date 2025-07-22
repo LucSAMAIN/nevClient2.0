@@ -11,6 +11,7 @@ from nevclient.factories.DAQMXFactory import DAQMXFactory
 from nevclient.factories.NISCOPEFactory import NISCOPEFactory
 from nevclient.factories.PSAFactory import PSAFactory
 from nevclient.factories.ParametersFactory import ParametersFactory
+from nevclient.factories.PulseFactory import PulseFactory
 # communication
 from nevclient.services.Communication.DAQMXComm import DAQMXComm
 from nevclient.services.Communication.NISCOPEComm import NISCOPEComm
@@ -21,6 +22,7 @@ from nevclient.services.Parsing.NISCOPEParsing import NISCOPEParsing
 from nevclient.services.DataManipulation.NISCOPEDataServices import NISCOPEDataServices
 from nevclient.services.DataManipulation.PSADataServices import PSADataServices
 from nevclient.services.DataManipulation.DAQMXDataServices import DAQMXDataServices
+from nevclient.services.DataManipulation.PulseDataServices import PulseDataServices
 # tcp client
 from nevclient.utils.TCPClient import TCPClient
 # views 
@@ -40,6 +42,7 @@ class Main():
 
         # Creation of the tcpclient:
         tcpClient = TCPClient()
+
         # Creation of services:
         daqmxComm   = DAQMXComm(tcpClient=tcpClient)
         niscopeComm = NISCOPEComm(tcpClient=tcpClient)
@@ -50,12 +53,14 @@ class Main():
         daqmxDM     = DAQMXDataServices()
         niscopeDM   = NISCOPEDataServices()
         PSADM       = PSADataServices()
+        pulseDM     = PulseDataServices()
 
         # Creation of the factories:
         daqmxFac   = DAQMXFactory(daqmxComm=daqmxComm, daqmxPars=daqmxPars)
         niscopeFac = NISCOPEFactory(niscopeComm=niscopeComm, niscopePars=niscopePars)
         psaFac     = PSAFactory(niscopeDataServ=niscopeDM)
         paramFac   = ParametersFactory(daqmxDataServices=daqmxDM)
+        pulseFac   = PulseFactory()
 
 
         # Initialization of the system before starting the app
@@ -81,7 +86,9 @@ class Main():
                                 paramFac=paramFac,
                                 psaDMServ=PSADM,
                                 daqmxComm=daqmxComm,
-                                daqmxDMServ=daqmxDM)
+                                daqmxDMServ=daqmxDM,
+                                pulseFac=pulseFac,
+                                pulseDMServ=pulseDM)
 
         # Creation of the views:
         entryFrame = EntryFrame(parent=None, size=(1500,1000), title="Nev client",

@@ -144,11 +144,11 @@ class DAQMXParsing():
     
         # creating the DAQMX channels:
         channels = []
-        for _ in range(nChannels):
+        for i in range(nChannels):
             data = [0.0 for _ in range(lData)] # default value see old code
             stim = [0.0 for _ in range(lData)] #  value see old code
             
-            channels.append(DAQMXChannel(device=device, dataLength=lData, data=data, stim=stim))
+            channels.append(DAQMXChannel(device=device, dataLength=lData, data=data, stim=stim, index=i))
 
         device.SetChannels(channels)
                

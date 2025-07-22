@@ -25,9 +25,9 @@ class PulseData():
     nbPulses                                : int
         The number of different pulses the user can define for every
         parameters.
-    CSVParamToPulsesConfigurationMap        : dict[CSVParameter : list[PulseConf]]
+    paramToPulsesConfigurationMap           : dict[str : list[PulseConf]]
         This map helps to store the configuration of every parameters.
-        Keys are the name of the parameter and values are the corresponding
+        Keys are the name of the parameters'name and values are the corresponding
         list of PulseConfiguration instance.
     curParameterName                        : CSVParameter
         Same idea as before but for parameter being currently defined.
@@ -39,11 +39,11 @@ class PulseData():
     def __init__(self,
                  nbPulses                                : int,
                  curParameterName                        : CSVParameter,
-                 CSVParamToPulsesConfigurationMap        : dict,
+                 paramToPulsesConfigurationMap           : dict[str : list[PulseConf]],
                  stimData                                : StimConf):
         self.nbPulses                                = nbPulses
         self.curParameterName                        = curParameterName
-        self.CSVParamToPulsesConfigurationMap = CSVParamToPulsesConfigurationMap
+        self.paramToPulsesConfigurationMap           = paramToPulsesConfigurationMap
         self.stimData                                = stimData
 
     
@@ -53,13 +53,13 @@ class PulseData():
         self.curParameterName = newName
     def SetNbPulses(self, newnbPulses : int) -> None:
         self.nbPulses = newnbPulses
-    def SetCSVParamToPulsesConfigurationMap(self, dico : dict) -> None:
-        self.CSVParamToPulsesConfigurationMap = dico
+    def SetParamToPulsesConfigurationMap(self, dico : dict[str : list[PulseConf]]) -> None:
+        self.paramToPulsesConfigurationMap = dico
 
 # ────────────────────────────────────────────────── Getters ─────────────────────────────────────────────────────
 
-    def GetCSVParamToPulsesConfigurationMap(self) -> dict:
-        return self.CSVParamToPulsesConfigurationMap
+    def GetParamToPulsesConfigurationMap(self) -> dict[str : list[PulseConf]]:
+        return self.paramToPulsesConfigurationMap
     def GetCurParameter(self) -> CSVParameter:
         return self.curParameterName
     def GetNbPulses(self) -> int:

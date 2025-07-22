@@ -12,14 +12,16 @@ from nevclient.views.templates.NevCheckBox import NevCheckBox
 from nevclient.views.templates.NevComboBox import NevComboBox
 # pulse data
 from nevclient.model.config.Pulse.PulseData import PulseData
-from nevclient.model.config.Pulse.StimConf import StimConf
 from nevclient.model.config.Pulse.PulseConf import PulseConf
 # parameters
-from nevclient.model.config.Parameters.ParametersData import ParametersData
 from nevclient.model.config.Parameters.CSVParameter import CSVParameter
 
 class PulsePanel(NevPanel):
-    def __init__(self, parent, controller, *args, **kwargs):
+    def __init__(self, 
+                 parent, 
+                 controller, 
+                 *args, 
+                 **kwargs):
         super().__init__(parent=parent, *args, **kwargs)
         # ---- ATTRIBUTES
         self.controller = controller
@@ -50,7 +52,7 @@ class PulsePanel(NevPanel):
         self.dtSpinCtrl = NevSpinCtrl(parent=self)
         self.dtSpinCtrl.SetValue(0.01), self.dtSpinCtrl.SetDigits(2), self.dtSpinCtrl.SetIncrement(0.01)
         self.TSpinCtrl = NevSpinCtrl(parent=self)
-        self.TSpinCtrl.SetValue(20), self.TSpinCtrl.SetDigits(0), self.TSpinCtrl.SetIncrement(1)
+        self.TSpinCtrl.SetValue(20), self.TSpinCtrl.SetDigits(0), self.TSpinCtrl.SetIncrement(1), self.TSpinCtrl.SetMax(100), self.TSpinCtrl.SetMin(1)
         # Text for common stim:
         self.stimTitle = NevSimpleBoldText(parent=self, label="Common stimulus for DAQMX dynamic devices:")
         self.dtText = NevSimpleText(parent=self, label="Δt(ms)")
@@ -81,7 +83,7 @@ class PulsePanel(NevPanel):
 
         # ---- BINDINGS:
         # for common stim:
-        self.TSpinCtrl.Bind(event=wx.EVT_SPINCTRLDOUBLE, handler=self.OnChangePeriod)
+        self.TSpinCtrl.Bind(event=wx.EVT_SPINCTRLDOUBLE, handler=self.OnChangeDuration)
         self.dtSpinCtrl.Bind(event=wx.EVT_SPINCTRLDOUBLE, handler=self.OnChangeDt)        
         # Param choices
         self.paramComboB.Bind(wx.EVT_COMBOBOX, self.OnChangingParamBox)
@@ -193,36 +195,28 @@ class PulsePanel(NevPanel):
         self.SetSizer(pulseSizer)
         self.SetAutoLayout(True)
         
-# ──────────────────────────────────────────────── METHODS ─────────────────────────────────────────────────────
+# ──────────────────────────────────────────────── Methods ─────────────────────────────────────────────────────
 
 
-    def UpdateOnLoadingParameters(self):
-        """
-        This method is called by the controller after the CSV parameters
-        have been loaded by the user.
-        It updates the choices combobox and the other configuration settings.
-        """
-        PData : PulseData = self.controller.GetPulseData()
-
-        choices = [csvParam.GetName() for csvParam in list(PData.GetCSVParamToPulsesConfigurationMap().keys())]
+    def UpdateOnLoadingParameters(self, pulseData : PulseData):
+        choices = [paramName for paramName in list(pulseData.GetParamToPulsesConfigurationMap().keys())]
         if not choices:
             return
         # Set the choices for the combo box!
         self.paramComboB.Set(choices)
-
         
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
+        self.UpdateAll(pulseData)
     
-    def UpdatePlot(self):
+    def UpdatePlot(self, pulseData : PulseData):
         """
         The UpdatePlot method is used to update the pulses vizualisation plot.
         It recovers the PulseData instance via the controller to retrieve all the
         configuration settings.
         """
-        PData : PulseData = self.controller.GetPulseData()
-
+        PData : PulseData = pulseData
         param = PData.GetCurParameter()
+        pulsesColor = ['red', 'blue']
+        T = pulseData.GetStimData().GetT()
         
         nbActivePulses = 0
         colors         = []
@@ -230,29 +224,29 @@ class PulsePanel(NevPanel):
         widths         = []
         amps           = []
         PConf : PulseConf
-        for i, PConf in enumerate(PData.GetCSVParamToPulsesConfigurationMap()[param]):
+        for i, PConf in enumerate(PData.GetParamToPulsesConfigurationMap()[param.GetName()]):
             if PConf.GetActive():
                 delays.append(PConf.GetDelay())
                 widths.append(PConf.GetWidth())
                 amps.append(PConf.GetAmp())
-                colors.append(self.controller.GetPulsesColors()[i])
+                colors.append(pulsesColor[i])
                 nbActivePulses += 1
         
-        self.pulsePlot.UpdateData(nbPulses=nbActivePulses   , delays=delays, widths=widths, amps=amps, colors=colors)
+        self.pulsePlot.UpdateData(nbPulses=nbActivePulses, delays=delays, widths=widths, amps=amps, colors=colors, T=T)
         self.Refresh()
         self.Update()
 
-    def UpdateAll(self):
+    def UpdateAll(self, pulseData : PulseData):
         """
         This methods update all the widget present
         on the pulse panel.
         """
         # First recover the important data:
-        PData : PulseData = self.controller.GetPulseData()
+        PData : PulseData = pulseData
         
         param  : CSVParameter       = PData.GetCurParameter()
-        pulse1 : PulseConf          = PData.GetCSVParamToPulsesConfigurationMap()[param][0]
-        pulse2 : PulseConf          = PData.GetCSVParamToPulsesConfigurationMap()[param][1]
+        pulse1 : PulseConf          = PData.GetParamToPulsesConfigurationMap()[param.GetName()][0]
+        pulse2 : PulseConf          = PData.GetParamToPulsesConfigurationMap()[param.GetName()][1]
 
         pulse1Delay = pulse1.GetDelay()
         pulse2Delay = pulse2.GetDelay()
@@ -264,7 +258,7 @@ class PulsePanel(NevPanel):
         pulse2Width = pulse2.GetWidth()
         
         # parameter combobox:
-        choices = [csvParam.GetName() for csvParam in list(PData.GetCSVParamToPulsesConfigurationMap().keys())]
+        choices = [paramName for paramName in list(PData.GetParamToPulsesConfigurationMap().keys())]
         self.paramComboB.SetSelection(choices.index(param.GetName()))
         # checkboxes:
         self.pulse1CheckBox.SetValue(pulse1.GetActive())
@@ -279,177 +273,92 @@ class PulsePanel(NevPanel):
         self.pulse1WidthSpinCtrl.SetValue(pulse1Width)
         self.pulse2WidthSpinCtrl.SetValue(pulse2Width)
         # plot:
-        self.UpdatePlot()
+        self.UpdatePlot(pulseData)
 
-    def ComputeAndUpdateDAQMX(self):
-        """
-        This method calls the 
-        controller UpdatePulseData 
-        method that execute a PulseData service.
-        Allowing the compute of waveforms and stim
-        data and updating DAQMX devices accordingly
-        to the gui and the result of computations.
-        """
-        self.controller.UpdatePulseData()
 
 # ──────────────────────────────────────────────── Event handler methods ─────────────────────────────────────────────────────
 
-    def OnChangePeriod(self, e : wx.Event):
-        Sd : StimConf = self.controller.GetPulseData().GetStimConf()
-        Sd.SetT(self.TSpinCtrl.GetValue())
+    # ---- COMMON STIMULUS 
+    def OnChangeDuration(self, e : wx.Event):
+        spinCtrl = e.GetEventObject()
+        duration = spinCtrl.GetValue()
+        self.controller.OnPulseChangeDuration(duration)
         
-        self.ComputeAndUpdateDAQMX()
         e.Skip()
     
     def OnChangeDt(self, e : wx.Event):
-        Sd : StimConf = self.controller.GetPulseData().GetStimConf()
-        Sd.SetDt(self.dtSpinCtrl.GetValue())
-
-        self.ComputeAndUpdateDAQMX()
+        spinCtrl = e.GetEventObject()
+        dt = spinCtrl.GetValue()
+        self.controller.OnPulseChangeDt(dt)
+        
         e.Skip()
 
+    # ---- PULSE CONF
     def OnChangingParamBox(self, e : wx.Event):
-        PData    : PulseData         = self.controller.GetPulseData()
-        ParamMan : ParametersData    = self.controller.GetParametersData()
-        csvParam : CSVParameter      = ParamMan.GetParamNameMap()[self.paramComboB.GetStringSelection()]
-        PData.SetCurParameter(csvParam)
+        comboBox = e.GetEventObject()
+        newName  = comboBox.GetStringSelection()
+        self.controller.OnPulseChangingParamBox(newName)
 
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
         e.Skip()
     
     def OnChangingAmp1(self, e : wx.Event):
-        if not self.paramComboB.GetStringSelection():
-            e.Skip()
-            return
-        PData : PulseData = self.controller.GetPulseData()
-        PConf : PulseConf = PData.GetCSVParamToPulsesConfigurationMap()[PData.GetCurParameter()][0]
-        PConf.SetAmp(self.pulse1AmpSpinCtrl.GetValue())
+        spinCtrl = e.GetEventObject()
+        val      = float(spinCtrl.GetValue())
+        self.controller.OnPulseChangingAmp(pulseId=0, amp=val)
 
-
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
         e.Skip()
 
     def OnChangingAmp2(self, e : wx.Event):
-        if not self.paramComboB.GetStringSelection():
-            e.Skip()
-            return
-        PData : PulseData = self.controller.GetPulseData()
-        PConf : PulseConf = PData.GetCSVParamToPulsesConfigurationMap()[PData.GetCurParameter()][1]
-        PConf.SetAmp(self.pulse2AmpSpinCtrl.GetValue())
+        spinCtrl = e.GetEventObject()
+        val      = float(spinCtrl.GetValue())
+        self.controller.OnPulseChangingAmp(pulseId=1, amp=val)
         
-        
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
         e.Skip()
 
     def OnChangingDelay1(self, e : wx.Event):
-        if not self.paramComboB.GetStringSelection():
-            e.Skip()
-            return
-        PData : PulseData = self.controller.GetPulseData()
-        PConf : PulseConf = PData.GetCSVParamToPulsesConfigurationMap()[PData.GetCurParameter()][0]
-        PConf.SetDelay(self.pulse1DelaySpinCtrl.GetValue())
-
-
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
+        spinCtrl = e.GetEventObject()
+        val      = float(spinCtrl.GetValue())
+        self.controller.OnPulseChangingDelay(pulseId=0, delay=val)
+        
         e.Skip()
 
     def OnChangingDelay2(self, e : wx.Event):
-        if not self.paramComboB.GetStringSelection():
-            e.Skip()
-            return
-        PData : PulseData = self.controller.GetPulseData()
-        PConf : PulseConf = PData.GetCSVParamToPulsesConfigurationMap()[PData.GetCurParameter()][1]
-        PConf.SetDelay(self.pulse2DelaySpinCtrl.GetValue())
-
-
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
+        spinCtrl = e.GetEventObject()
+        val      = float(spinCtrl.GetValue())
+        self.controller.OnPulseChangingDelay(pulseId=1, delay=val)
+        
         e.Skip()
+
 
     def OnChangingWidth1(self, e : wx.Event):
-        if not self.paramComboB.GetStringSelection():
-            e.Skip()
-            return
-        PData : PulseData = self.controller.GetPulseData()
-        PConf : PulseConf = PData.GetCSVParamToPulsesConfigurationMap()[PData.GetCurParameter()][0]
-        PConf.SetWidth(self.pulse1WidthSpinCtrl.GetValue())
-
-
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
+        spinCtrl = e.GetEventObject()
+        val      = float(spinCtrl.GetValue())
+        self.controller.OnPulseChangingWidth(pulseId=0, width=val)
+        
         e.Skip()
 
+
     def OnChangingWidth2(self, e : wx.Event):
-        if not self.paramComboB.GetStringSelection():
-            e.Skip()
-            return
-        PData : PulseData = self.controller.GetPulseData()
-        PConf : PulseConf = PData.GetCSVParamToPulsesConfigurationMap()[PData.GetCurParameter()][1]
-        PConf.SetWidth(self.pulse2WidthSpinCtrl.GetValue())
-
-
-
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
+        spinCtrl = e.GetEventObject()
+        val      = float(spinCtrl.GetValue())
+        self.controller.OnPulseChangingWidth(pulseId=1, width=val)
+        
         e.Skip()
 
     def OnChangingActive1(self, e : wx.Event):
-        if not self.paramComboB.GetStringSelection():
-            e.Skip()
-            return
-        PData : PulseData = self.controller.GetPulseData()
-        PConf : PulseConf = PData.GetCSVParamToPulsesConfigurationMap()[PData.GetCurParameter()][0]
-        PConf.SetActive(self.pulse1CheckBox.IsChecked())
-
-
-
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
+        checkBox = e.GetEventObject()
+        val      = bool(checkBox.IsChecked())
+        self.controller.OnPulseChangingActive(pulseId=0, active=val)
+        
         e.Skip()
 
     def OnChangingActive2(self, e : wx.Event):
-        if not self.paramComboB.GetStringSelection():
-            e.Skip()
-            return
-        PData : PulseData = self.controller.GetPulseData()
-        PConf : PulseConf = PData.GetCSVParamToPulsesConfigurationMap()[PData.GetCurParameter()][1]
-        PConf.SetActive(self.pulse2CheckBox.IsChecked())
-
-
-        self.UpdateAll()
-        self.ComputeAndUpdateDAQMX()
+        checkBox = e.GetEventObject()
+        val      = bool(checkBox.IsChecked())
+        self.controller.OnPulseChangingActive(pulseId=1, active=val)
+        
         e.Skip()
 
-
-
-# ────────────────────────────────────────────────── Getters ─────────────────────────────────────────────────────
-
-    def GetPulsesDelays(self) -> list[float]:
-        result = [spinCtrl.GetValue() for spinCtrl in self.delaysSpinCtrl]
-        return list(map(float, result))
-    
-    def GetPulsesWidths(self) -> list[float]:
-        result = [spinCtrl.GetValue() for spinCtrl in self.widthsSpinCtrl]
-        return list(map(float, result))
-    
-    def GetPulsesAmps(self) -> list[float]:
-        result = [spinCtrl.GetValue() for spinCtrl in self.ampsSpinCtrl]
-        return list(map(float, result))
-    
-    def GetPulsesActives(self) -> list[bool]:
-        result = [checkBox.IsChecked() for checkBox in self.activesCheckBox]
-        return list(map(bool, result))
-    
-    def GetDefaultPulseDelay(self) -> float:
-        return self.defaultValueDelay
-    def GetDefaultPulseAmp(self) -> float:
-        return self.defaultValueAmp
-    def GetDefaultPulseWidth(self) -> float:
-        return self.defaultValueWidth
 
 
 

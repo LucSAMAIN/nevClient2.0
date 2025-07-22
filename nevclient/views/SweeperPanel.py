@@ -18,7 +18,8 @@ from nevclient.views.templates.NevCheckBox import NevCheckBox
 from nevclient.model.config.PSA.ChannelConf import ChannelConf
 
 class SweeperPanel(NevPanel):
-    def __init__(self, parent, 
+    def __init__(self, 
+                 parent, 
                  controller, 
                  psaData, 
                  colorMap, 
