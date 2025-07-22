@@ -319,10 +319,10 @@ class Controller():
             self.entryFrame.GetParametersPanel().SetGridValue(row, col, "-")
             return
 
-        setupName = self.parametersData.GetCurrentSetup()
+        setupName = self.parametersData.GetCurSetup()
         paramName = self.entryFrame.GetParametersPanel().GetGridValue(row, 0)
 
-        csvParam : CSVParameter = self.parametersData.GetParametersMap(paramName)
+        csvParam : CSVParameter = self.parametersData.GetParametersMap()[paramName]
         try:
             newValue = float(self.entryFrame.GetParametersPanel().GetGridValue(row, 1))
         except ValueError:
