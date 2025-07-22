@@ -48,7 +48,7 @@ class PSADataServices():
         confs = psaMode.GetChnConfList()
         return [conf for conf in confs if conf.GetActive()]
 
-    def UpdatePSAModelAfterLoadingParameters(self, psaMode : PSAMode, filePath : str, tag : str, parametersData : ParametersData):
+    def UpdatePSAModelAfterLoadingParameters(self, psaMode : PSAMode, csv : CSVWorker, tag : str, parametersData : ParametersData):
         """
         Updates the psa mode sweep map attributes after the user
         has loaded a csv file.
@@ -57,9 +57,8 @@ class PSADataServices():
         ----------
         psaMode  : PSAMode
             The psaMode's instance to update
-        filePath : str
-            The file path to the csv file containing all
-            the data.
+        csv      : CSVWorker
+            The csv worker util's instance.
         tag      : str
             The tag of the mode we are looking for inside
             the csv file, i.e. '#NCMODE'
@@ -67,7 +66,6 @@ class PSADataServices():
             The ParametersData instance used to recover
             the CSV parameter instance from the name of the parameter.
         """
-        csv = CSVWorker(filePath=filePath)
         # sweep :
         modeMap = csv.GetParametersModeMap(tag=tag)
         

@@ -3,7 +3,6 @@
 
 # extern modules
 import pandas as pd
-import re
 
 # utils
 from nevclient.utils.Logger import Logger
@@ -12,6 +11,7 @@ from nevclient.model.config.PSA.SweepConf import SweepConf
 # parameters
 from nevclient.model.config.Parameters.ParametersData import ParametersData
 from nevclient.model.config.Parameters.CSVParameter import CSVParameter
+
 
 class CSVWorker():
     """
@@ -33,16 +33,18 @@ class CSVWorker():
 
     Attributes
     ----------
-    df : pd.DataFrame
+    df       : pd.DataFrame
         The pandas dataframe containing all the data from the csv file
     filePath : str
         The file path of the csv file to parse.
+    mode     : 
     """
 
     _REQUIRED_ATTRIBUTES = {"#ID", "#DEV", "#CH", "#LABEL", "#NCMODE"}
 
     def __init__(self, filePath : str):
         self.logger   = Logger("CSVWorker")
+        
         self.filePath = filePath
 
 
@@ -191,7 +193,7 @@ class CSVWorker():
         parametersData : parametersData
             The model runtime instance.
         """
-
+        self.logger.debug("Entering the save method.")
         # Create a copy to avoid side effects if the save operation fails
         toSaveDf = self.df.copy()
 
@@ -201,7 +203,7 @@ class CSVWorker():
         for name, param in parametersData.GetParametersMap().items():
             rowIndex = toSaveDf.index[toSaveDf['#LABEL'] == name]
 
-            if not rowIndex:
+            if rowIndex.empty:
                 self.logger.warning(f"Parameter '{name}' not found in the original DataFrame. Skipping.")
                 continue
         
@@ -210,7 +212,8 @@ class CSVWorker():
 
             # 2. Update the values for all relevant setup columns
             for setupName, value in param.GetSetupsValues().items():
-                toSaveDf.at[rowIndex, setupName] = value
+                self.logger.debug(f"Inside the loop for recovering the data: rowIndex={rowIndex}, setupName={setupName}, value={value}.")
+                toSaveDf.at[rowIndex.item(), setupName] = value
 
         # Save the updated DataFrame to the specified CSV file
         try:

@@ -188,27 +188,19 @@ class ParametersPanel(NevPanel):
         self.Refresh()
         self.Layout()
 
-        
-    def OverrideParameter(self, paramLabel : str, newValue):
-        """
-        The OverrideParameter is a method called by the controller to update a value in parameters panel.
 
-        Parameters
-        ----------
-        paramLabel : str
-            The parameter's name to update
-        newValue : int / float / ?
-            The new value to display inside the grid
-        """
-        paramNames = self.controller.GetCSVData().GetlistParamNames()
-        rowNum = paramNames.index(paramLabel)
-        newValueString = str(newValue)
-        self.grid.SetCellValue(rowNum, 1, newValueString)
+    def SetGridValue(self, row : int, col : int, value : str):
+        self.grid.SetCellValue(row, col, value)
         
-
+        self.grid.AutoSize()
+        self.grid.Refresh()
+        self.grid.Layout()
         self.Refresh()
-        self.Update()
         self.Layout()
+    
+    def GetGridValue(self, row : int, col : int) -> str:
+        return self.grid.GetCellValue(row, col)
+
 
     def ApplyTheme(self):
         self.grid.HideRowLabels()
@@ -223,53 +215,10 @@ class ParametersPanel(NevPanel):
 
         event.Skip()
 
-
-
-
     def OnCellChanged(self, event):
-        """
-        inputs (wx.Event) : event
-        outputs : None
-        This method is called when a cell in the grid is edited. It updates the setup dictionary
-        and the source allParametersDict with the new value.
-        """
         row, col = event.GetRow(), event.GetCol()
-        paramData : ParametersData = self.controller.GetParametersData()
-        paramNames = list(paramData.GetParamNameMap().keys())
-        if col == 0: # ignore edits outside second column
-            self.grid.SetCellValue(row, col, paramNames[row])  # reset to original value
-            event.Skip()
-            return
-        if col == 2: # ignore edits outside second column
-            self.grid.SetCellValue(row, col, "+")
-            event.Skip()
-            return
-        if col == 3: # ignore edits outside second column
-            self.grid.SetCellValue(row, col, "-")
-            event.Skip()
-            return
-
-        setupName = paramData.GetCurrentSetup()
-        paramName = self.grid.GetCellValue(row, 0)
-        try:
-            newValue = float(self.grid.GetCellValue(row, 1))
-            
-            
-        except ValueError:
-            wx.MessageBox(f"Invalid value entered for '{paramName}'. Please enter a valid number.", 
-                          "Input Error", wx.OK | wx.ICON_ERROR)
-            self.grid.SetCellValue(row, 1, str(self.controller.GetCSVData().GetdictSetups()[setupName].get(paramName, "???")))  # Reset to original value
-            return
-        except Exception as e:
-            wx.MessageBox(f"An error occurred: {str(e)}", "Error", wx.OK | wx.ICON_ERROR)
-            self.grid.SetCellValue(row, 1, str(self.controller.GetCSVData().GetdictSetups()[setupName].get(paramName, "???")))  # Reset to original value
-            return
+        self.controller.OnParametersCellChanged(row, col)
         
-
-        # Update the model:
-        paramData.OnChangingParamValue(paramName, float(newValue))
-
-
 
         # Refresh the grid to reflect the changes
         self.grid.Refresh()
@@ -277,16 +226,13 @@ class ParametersPanel(NevPanel):
         self.Refresh()
         self.Update()
         self.Layout()
+
+
         event.Skip()
 
 
 
     def OnSaveButton(self, event):
-        """
-        inputs (wx.Event) : event
-        outputs : None
-        This method opens a file dialog to save the current parameters to a CSV file.        
-        """
         with wx.FileDialog(
             self,
             "Save CSV file",
@@ -298,7 +244,7 @@ class ParametersPanel(NevPanel):
 
             pathname = dlg.GetPath()
             try:
-                self.controller.GetCSVWorker().SaveToCSV(pathname, self.controller.GetParametersData())
+                self.controller.OnParametersSave(pathname)
                 wx.MessageBox(
                     f"Changes saved to {pathname}",
                     "Info",

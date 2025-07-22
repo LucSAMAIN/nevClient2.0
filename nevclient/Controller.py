@@ -9,6 +9,8 @@ from nevclient.factories.ParametersFactory import ParametersFactory
 # logger
 from nevclient.utils.Logger import Logger
 from nevclient.utils.Logger import log_debug_event
+# csv worker
+from nevclient.utils.CSVWorker import CSVWorker
 # NISCOPE
 from nevclient.model.hardware.NISCOPE.NISCOPESys import NISCOPESys
 # DAQMX
@@ -64,6 +66,7 @@ class Controller():
         
         self.entryFrame     : EntryFrame     = None # later set
         self.parametersData : ParametersData = None # same
+        self.csvWorker      : CSVWorker      = None # same
         
 
 
@@ -101,12 +104,13 @@ class Controller():
         # Manipulation of the model:
         # Build the parameters data
         filePath : str = os.path.join(dirName, fileName)
-        self.parametersData = self.paramFac.BuildParametersData(filePath, self.daqmxSys)
+        self.csvWorker = CSVWorker(filePath)
+        self.parametersData = self.paramFac.BuildParametersData(self.csvWorker, self.daqmxSys)
         # Update the sweeper configuration part:
         psaMode : PSAMode
         for psaMode in self.psaData.GetPsaModeMap().values():
             self.psaDMServ.UpdatePSAModelAfterLoadingParameters(psaMode=psaMode,
-                                                                filePath=filePath,
+                                                                csv=self.csvWorker,
                                                                 tag=psaMode.GetTag(),
                                                                 parametersData=self.parametersData)
 
@@ -289,8 +293,47 @@ class Controller():
 
 
 # ---- Parameters panel
+    @log_debug_event
     def OnParametersChangingSetUp(self, newSetupName : str):
         self.parametersData.SetCurSetup(newSetupName)
         # Update the view:
         self.entryFrame.GetParametersPanel().FillGrid(self.parametersData)
-        pass
+    
+    @log_debug_event
+    def OnParametersCellChanged(self, row : int, col : int):
+        paramNames = list(self.parametersData.GetParametersMap().keys())
+        if col == 0: # ignore edits outside second column
+            self.entryFrame.GetParametersPanel().SetGridValue(row, col, paramNames[row])  # reset to original value
+            return
+        if col == 2: # ignore edits outside second column
+            self.entryFrame.GetParametersPanel().SetGridValue(row, col, "+")
+            return
+        if col == 3: # ignore edits outside second column
+            self.entryFrame.GetParametersPanel().SetGridValue(row, col, "-")
+            return
+
+        setupName = self.parametersData.GetCurrentSetup()
+        paramName = self.entryFrame.GetParametersPanel().GetGridValue(row, 0)
+
+        csvParam : CSVParameter = self.parametersData.GetParametersMap(paramName)
+        try:
+            newValue = float(self.entryFrame.GetParametersPanel().GetGridValue(row, 1))
+        except ValueError:
+            wx.MessageBox(f"Invalid value entered for '{paramName}'. Please enter a valid number.", 
+                          "Input Error", wx.OK | wx.ICON_ERROR)
+
+            oldValue = str(csvParam.GetSetupsValues().get(setupName, "???"))
+            self.entryFrame.GetParametersPanel().SetGridValue(row, 1, oldValue)
+            return
+        except Exception as e:
+            wx.MessageBox(f"An error occurred: {str(e)}", "Error", wx.OK | wx.ICON_ERROR)
+            oldValue = str(csvParam.GetSetupsValues().get(setupName, "???"))
+            self.entryFrame.GetParametersPanel().SetGridValue(row, 1, oldValue)
+            return
+        
+
+        # Update the model:
+        csvParam.GetSetupsValues()[setupName] = newValue
+
+    def OnParametersSave(self, filePath : str):
+        self.csvWorker.SaveToCSV(filePath=filePath, parametersData=self.parametersData)

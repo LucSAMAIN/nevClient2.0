@@ -28,7 +28,7 @@ class ParametersFactory():
         self.logger = Logger("ParametersFactory")
         self.daqmxDataServices = daqmxDataServices
 
-    def BuildParametersData(self, filePath : str, daqmxSys : DAQMXSys):
+    def BuildParametersData(self, csv : CSVWorker, daqmxSys : DAQMXSys):
         """
         Returns a fresh ParametersData instance from a csv file.
         And updates the PSA data instance accordingly to the 
@@ -36,15 +36,10 @@ class ParametersFactory():
 
         Parameters
         ----------
-        filePath : str
-            The path to the csv file.
+        csv      : CSVWorker
+            The csv worker util's instance
         daqmxSys : DAQMXSys
         """
-        # resultFormat = ParametersData(parametersMap=dict(), curSetup="", setupsList=list())
-
-        # Instance of the csvworker:
-        csv = CSVWorker(filePath=filePath)
-
         # (1) Creation of the parameters map
         # Creation of the csv parameters
         # Recover useful structures from the worker
