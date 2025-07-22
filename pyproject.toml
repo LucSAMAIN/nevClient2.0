@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+
+
+
+[project]
+name = "nevclient2.0"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "wxPython>=4.2",
+    "pandas>=2.0",
+    "numpy>=2.0"
+]
+authors = [
+  { name="SAMAIN Luc", email="luc.samain2@gmail.com" },
+]
+
+
+[project.urls]
+Homepage = "https://github.com/LucSAMAIN/nevNewClient"
+
+
+
+
+[tool.setuptools.packages.find]
+where = ["nevclient"]

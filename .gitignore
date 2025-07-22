@@ -1,0 +1,8 @@
+.env/
+__pycache__/
+nevclient2.0.egg-info/
+plantuml*
+*.zip
+*pdf
+gpt_translated_old_nev_doc.md
+data/
