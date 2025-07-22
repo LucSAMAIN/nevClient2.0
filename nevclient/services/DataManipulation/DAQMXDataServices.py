@@ -6,6 +6,7 @@ from nevclient.utils.Logger import Logger
 # DAQMX
 from nevclient.model.hardware.DAQMX.DAQMXSys import DAQMXSys
 from nevclient.model.hardware.DAQMX.DAQMXDevice import DAQMXDevice
+from nevclient.model.hardware.DAQMX.DAQMXChannel import DAQMXChannel
 
 class DAQMXDataServices():
     """
@@ -65,3 +66,49 @@ class DAQMXDataServices():
 
         self.logger.error(f"No suitable device found for taskName='{deviceName}' and channelInfo='{channelInfo}', returning a None value.")
         return None
+
+    def GetDeviceData(self, dev : DAQMXDevice) -> list[list[float]]:
+        """
+        Return all the data of a device by serializing its channel's
+        data.
+
+        Parameters
+        ----------
+        dev : DAQMXDevice
+            The device from which the caller wants to recover the
+            serialized data.
+
+        Returns
+        -------
+        list[list[float]]
+        """
+        result = []
+
+        chn : DAQMXChannel
+        for chn in dev.GetChannels():
+            result.append(chn.GetData())
+        
+        return result
+    
+    def GetDeviceStim(self, dev : DAQMXDevice) -> list[list[float]]:
+        """
+        Return all the stimulus'data of a device 
+        by serializing its channel's stimulus.
+
+        Parameters
+        ----------
+        dev : DAQMXDevice
+            The device from which the caller wants to recover the
+            serialized stimulus'data.
+
+        Returns
+        -------
+        list[list[float]]
+        """
+        result = []
+
+        chn : DAQMXChannel
+        for chn in dev.GetChannels():
+            result.append(chn.GetStim())
+        
+        return result

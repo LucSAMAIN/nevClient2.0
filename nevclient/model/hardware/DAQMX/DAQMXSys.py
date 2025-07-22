@@ -29,7 +29,7 @@ class DAQMXSys():
         s = f"DAQMXSys:\n"
         device : DAQMXDevice
         for device in self.devicesMap.values():
-            s += f"  id: {device.id} -> {device.deviceName} ({device.modelName}), nChannels={device.nChannels}, kind={device.getTaskKind()}\n"
+            s += f"  id: {device.id} -> {device.deviceName} ({device.modelName}), nChannels={device.nChannels}, kind={device.getDeviceKind()}\n"
       
         return s   
 

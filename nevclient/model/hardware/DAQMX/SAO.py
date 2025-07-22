@@ -66,7 +66,7 @@ class SAO(DAQMXStaticDevice, DAQMXAnalogDevice):
             f"  deviceName={self.deviceName},"
             f"  modelName={self.modelName},"
             f"  nChannels={self.nChannels},"
-            f"  lData={self.lData},"
+            f"  lData={self.dataLength},"
             f"  freq={self.freq},"
             f"  state={self.state})"
         )

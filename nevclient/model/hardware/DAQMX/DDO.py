@@ -41,7 +41,7 @@ class DDO(DAQMXDynamicDevice, DAQMXDigitalDevice):
                     nChannels   : int,        # channel count  
                     state       : int,         # status
                     freq        : float, # sampling frequency - only for dynamic devices
-                    lData       : int, # max lenght data for a channel
+                    dataLength  : int, # max lenght data for a channel
                     channels    : list[DAQMXChannel]
                 ):
         self.logger = Logger(f"DDO id={id}")
@@ -51,7 +51,7 @@ class DDO(DAQMXDynamicDevice, DAQMXDigitalDevice):
                          nChannels=nChannels, 
                          state=state, 
                          freq=freq, 
-                         lData=lData,
+                         dataLength=dataLength,
                          channels=channels)
 
 
@@ -69,7 +69,7 @@ class DDO(DAQMXDynamicDevice, DAQMXDigitalDevice):
             f"  deviceName={self.deviceName},"
             f"  modelName={self.modelName},"
             f"  nChannels={self.nChannels},"
-            f"  lData={self.lData},"
+            f"  lData={self.dataLength},"
             f"  freq={self.freq},"
             f"  state={self.state})"
         )

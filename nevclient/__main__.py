@@ -79,7 +79,9 @@ class Main():
                                 daqmxSys=daqmxSystem, 
                                 psaData=psaData,
                                 paramFac=paramFac,
-                                psaDMServ=PSADM)
+                                psaDMServ=PSADM,
+                                daqmxComm=daqmxComm,
+                                daqmxDMServ=daqmxDM)
 
         # Creation of the views:
         entryFrame = EntryFrame(parent=None, size=(1500,1000), title="Nev client",

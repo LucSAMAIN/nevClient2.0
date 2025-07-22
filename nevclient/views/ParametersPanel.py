@@ -277,5 +277,7 @@ class ParametersPanel(NevPanel):
         event.Skip()
 
     def OnUpdate(self, e :wx.Event):
-        self.controller.SendDAQMXUpdatesToBackEndServer()
+        self.controller.OnParametersUpdate()
+
+        e.Skip()
         

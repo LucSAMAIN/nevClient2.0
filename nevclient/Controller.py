@@ -33,7 +33,9 @@ from nevclient.model.Enums.SamplingFreq import SamplingFreq
 from nevclient.model.Enums.NISCOPEChannelVerticalCoupling import NISCOPEChannelVerticalCoupling
 from nevclient.model.Enums.NISCOPEChannelVerticalRange import NISCOPEChannelVerticalRange
 # services
+from nevclient.services.DataManipulation.DAQMXDataServices import DAQMXDataServices
 from nevclient.services.DataManipulation.PSADataServices import PSADataServices
+from nevclient.services.Communication.DAQMXComm import DAQMXComm
 
 class Controller():
     """
@@ -47,22 +49,27 @@ class Controller():
     psaData    : PSAData
     paramFac   : ParametersFactory
     psaDMServ  : PSADataServices
+    daqmxComm  : DAQMXComm
     """
 
     def __init__(self,
-                 niscopeSys : NISCOPESys,
-                 daqmxSys   : DAQMXSys,
-                 psaData    : PSAData,
-                 paramFac   : ParametersFactory,
-                 psaDMServ  : PSADataServices):
+                 niscopeSys  : NISCOPESys,
+                 daqmxSys    : DAQMXSys,
+                 psaData     : PSAData,
+                 paramFac    : ParametersFactory,
+                 psaDMServ   : PSADataServices,
+                 daqmxComm   : DAQMXComm,
+                 daqmxDMServ : DAQMXDataServices):
         self.logger = Logger("Controller")
 
-        self.paramFac   = paramFac
-        self.niscopeSys = niscopeSys
-        self.daqmxSys   = daqmxSys
-        self.psaData    = psaData
-
-        self.psaDMServ  = psaDMServ
+        self.paramFac    = paramFac
+        self.niscopeSys  = niscopeSys
+        self.daqmxSys    = daqmxSys
+        self.psaData     = psaData
+ 
+        self.psaDMServ   = psaDMServ
+        self.daqmxDMServ = daqmxDMServ
+        self.daqmxComm   = daqmxComm
         
         self.entryFrame     : EntryFrame     = None # later set
         self.parametersData : ParametersData = None # same
@@ -400,3 +407,6 @@ class Controller():
             wx.MessageBox(f"Unknown error : {str(e)}", 
                             "Error", wx.OK | wx.ICON_ERROR)
     
+    @log_debug_event
+    def OnParametersUpdate(self):
+        self.daqmxComm.UpdateBackendServer(self.daqmxSys, self.daqmxDMServ)
