@@ -265,92 +265,17 @@ class ParametersPanel(NevPanel):
 
 
     def OnGridCellClick(self, event):
-        """
-        inputs (wx.Event) :  event
-        outputs : None
-        This method handles the click event on the grid cells for the "+" and "-" columns.
-        It increments or decrements the value in the second column based on the clicked cell.
-        It also ensures that the value remains within the precision of the original value.
-        """
         row, col = event.GetRow(), event.GetCol()
+        self.controller.OnParametersGridCellClick(row, col)
         
-        # Only works for the "+" and "-" columns (2 and 3)
-        if col != 2 and col != 3:
-            event.Skip()  # Let the event propagate if not in the "+" or "-" columns
-            return
-        
-        paramName = self.grid.GetCellValue(row, 0)
-        currentValueStr = self.grid.GetCellValue(row, 1)
-        
-        try:
-            digitPrecision = self._count_decimal_places(currentValueStr)
-            currentValue = float(currentValueStr) # now that we have the precision, we can convert it to float for the operation                
-
-            if col == 2: # Clic on "+"
-                newValue = currentValue + 10**-digitPrecision
-                
-            else: # Clic on  "-"
-                newValue = currentValue - 10**-digitPrecision
-            newValue = round(newValue, digitPrecision) # in case we do not break the ceiling of the digit precision
-            
-            # We need to ensure we stay within the digit precision
-            if len(str(newValue).split('.')[1]) > digitPrecision:
-                newValueString = str(newValue)[:len(str(newValue).split('.')[0]) + digitPrecision + 1] # shrink it
-            elif len(str(newValue).split('.')[1]) < digitPrecision:
-                newValueString = str(newValue) + '0' * (digitPrecision - len(str(newValue).split('.')[1])) # add zeros
-            else:
-                newValueString = str(newValue)
-
-
-            # Update the grid cell with the new value
-            self.grid.SetCellValue(row, 1, newValueString)
-            
-            
-            # Update the data:
-            self.controller.UpdateCSVDAQMXAndViewParam(paramLabel=paramName, value=newValueString)
-                    
-        except ValueError:
-            # Handle the case where the current value is not a valid number
-            wx.MessageBox(f"The current value '{currentValueStr}' for '{paramName}' is not a valid number.", 
-                            "Conversion error", wx.OK | wx.ICON_ERROR)
-        except Exception as e:
-            wx.MessageBox(f"Unknown error : {str(e)}", 
-                            "Error", wx.OK | wx.ICON_ERROR)
-        
-        # Refresh the grid to reflect the changes
         self.grid.Refresh()
         self.grid.Layout()
         self.Refresh()
         self.Update()
         self.Layout()
 
+        event.Skip()
+
     def OnUpdate(self, e :wx.Event):
         self.controller.SendDAQMXUpdatesToBackEndServer()
-
         
-
-
-
-
-
-    # ────────────────────────────────────────────────── UTILS METHODS ───────────────────────────────────────────────────── 
-
-    def _count_decimal_places(self, stringNumber):
-        """
-        inputs (str) : stringNumber
-        outputs (int) : number of decimal places
-        This method counts the number of decimal places in a number.
-        """
-        if '.' in stringNumber:
-            return len(stringNumber.split('.')[-1])
-        return 0
-
-    # ────────────────────────────────────────────────── OTHER METHODS ───────────────────────────────────────────────────── 
-    
-    
-
-
-    # ────────────────────────────────────────────────── GETTERs ─────────────────────────────────────────────────────  
-    def GetSetUpName(self):
-        return self.trueCheckbox.GetLabel()  
-    

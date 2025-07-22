@@ -335,5 +335,68 @@ class Controller():
         # Update the model:
         csvParam.GetSetupsValues()[setupName] = newValue
 
+    @log_debug_event
     def OnParametersSave(self, filePath : str):
         self.csvWorker.SaveToCSV(filePath=filePath, parametersData=self.parametersData)
+
+    @log_debug_event
+    def OnParametersGridCellClick(self, row : int, col : int):
+        # Only works for the "+" and "-" columns (2 and 3)
+        if col != 2 and col != 3:
+            return
+        
+        paramName = self.entryFrame.GetParametersPanel().GetGridValue(row, 0)
+        currentValueStr = self.entryFrame.GetParametersPanel().GetGridValue(row, 1)
+        def _count_decimal_places(stringNumber):
+            """
+            This method counts the number of decimal places in a number.
+
+            Parameters
+            ----------
+            stringNumber : str
+                The input string of the number.
+
+            Returns
+            -------
+            int : 
+                The number of decimal places.
+            """
+            if '.' in stringNumber:
+                return len(stringNumber.split('.')[-1])
+            return 0
+        
+        try:
+            digitPrecision = _count_decimal_places(currentValueStr)
+            currentValue = float(currentValueStr) # now that we have the precision, we can convert it to float for the operation                
+
+            if col == 2: # Clic on "+"
+                newValue = currentValue + 10**-digitPrecision
+                
+            else: # Clic on  "-"
+                newValue = currentValue - 10**-digitPrecision
+            newValue = round(newValue, digitPrecision) # in case we do not break the ceiling of the digit precision
+            
+            # We need to ensure we stay within the digit precision
+            if len(str(newValue).split('.')[1]) > digitPrecision:
+                newValueString = str(newValue)[:len(str(newValue).split('.')[0]) + digitPrecision + 1] # shrink it
+            elif len(str(newValue).split('.')[1]) < digitPrecision:
+                newValueString = str(newValue) + '0' * (digitPrecision - len(str(newValue).split('.')[1])) # add zeros
+            else:
+                newValueString = str(newValue)
+
+
+            # Update the grid cell with the new value
+            self.entryFrame.GetParametersPanel().SetGridValue(row, 1, newValueString)
+        
+            # Update the model:
+            setupName = self.parametersData.GetCurSetup()
+            self.parametersData.GetParametersMap()[paramName].GetSetupsValues()[setupName] = newValue
+                    
+        except ValueError:
+            # Handle the case where the current value is not a valid number
+            wx.MessageBox(f"The current value '{currentValueStr}' for '{paramName}' is not a valid number.", 
+                            "Conversion error", wx.OK | wx.ICON_ERROR)
+        except Exception as e:
+            wx.MessageBox(f"Unknown error : {str(e)}", 
+                            "Error", wx.OK | wx.ICON_ERROR)
+    
