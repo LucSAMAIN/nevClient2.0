@@ -132,7 +132,7 @@ class CSVWorker():
         result = {}
         for i, paramName in enumerate(paramNames):
             ncMode = self.df.at[i, tag]
-            if ncMode:
+            if ncMode != "nan":
                 result[paramName] = str(ncMode)
 
         return result
