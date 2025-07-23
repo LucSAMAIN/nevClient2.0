@@ -58,7 +58,7 @@ class Main():
         # Creation of the factories:
         daqmxFac   = DAQMXFactory(daqmxComm=daqmxComm, daqmxPars=daqmxPars)
         niscopeFac = NISCOPEFactory(niscopeComm=niscopeComm, niscopePars=niscopePars)
-        psaFac     = PSAFactory(niscopeDataServ=niscopeDM)
+        psaFac     = PSAFactory(niscopeDataServ=niscopeDM, psaDMServ=PSADM)
         paramFac   = ParametersFactory(daqmxDataServices=daqmxDM)
         pulseFac   = PulseFactory()
 
@@ -72,7 +72,7 @@ class Main():
         
         # Other useful data structures:
         colorMap = niscopeDM.GetChannelColors(niscopeSys=niscopeSystem)
-        generateLegends = lambda conf: f"{conf.GetNiscopeChn().GetDevice().GetDeviceName()} {conf.GetNiscopeChn().GetDevice().GetId()} chn {conf.GetNiscopeChn().GetIndex()}"
+        generateLegends = lambda conf: PSADM.GenerateLegends(conf)
         activeChannelConf = PSADM.GetActiveChannelsConfigurationList(psaData.GetCurPsaMode())
         
         # Creation of the wx app:
@@ -88,7 +88,8 @@ class Main():
                                 daqmxComm=daqmxComm,
                                 daqmxDMServ=daqmxDM,
                                 pulseFac=pulseFac,
-                                pulseDMServ=pulseDM)
+                                pulseDMServ=pulseDM,
+                                niscopeDMServ=niscopeDM)
 
         # Creation of the views:
         entryFrame = EntryFrame(parent=None, size=(1500,1000), title="Nev client",

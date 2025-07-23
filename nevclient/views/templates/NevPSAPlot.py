@@ -119,8 +119,17 @@ class NevPSAPlot(plot.plotcanvas.PlotCanvas):
         self.enableLegend = True
         self.Draw(graphics, xAxis=(plotMinX, plotMaxX), yAxis=(plotMinY, plotMaxY))
     
+    def UpdateData(self, X : list[float], Y : list[list[float]], XAxisName : str, colors : list[str], legends : list[str]):
+        self.X         = X
+        self.Y         = Y
+        self.XAxisName = XAxisName
+        self.colors    = colors
+        self.legends   = legends
+
     def UpdatePlot(self):
         self.PlotData(self.X, self.Y)
+        self.Refresh()
+        self.Update()
 
 # ───────────────────────────────────────────────────────── GETTERs ──────────────────────────────────────────────────────────────
 

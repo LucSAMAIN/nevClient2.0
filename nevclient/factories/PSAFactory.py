@@ -11,12 +11,14 @@ from nevclient.model.config.PSA.PSAMode import PSAMode
 from nevclient.model.config.PSA.TimingConf import TimingConf
 from nevclient.model.Enums.SamplingFreq import SamplingFreq
 from nevclient.model.config.PSA.ChannelConf import ChannelConf
+from nevclient.model.config.PSA.PSASimulation import PSASimulation
 # niscope
 from nevclient.model.hardware.NISCOPE.NISCOPESys import NISCOPESys
 from nevclient.model.hardware.NISCOPE.NISCOPEChannel import NISCOPEChannel
 from nevclient.model.hardware.NISCOPE.NISCOPEDevice import NISCOPEDevice
 # services
 from nevclient.services.DataManipulation.NISCOPEDataServices import NISCOPEDataServices
+from nevclient.services.DataManipulation.PSADataServices import PSADataServices
 
 class PSAFactory():
     """
@@ -26,16 +28,20 @@ class PSAFactory():
     ----------
     niscopeDataServ : NISCOPEDataServices
         The niscope data manipulation services' instance.
+    psaDMServ : PSADataServices
 
     Public methods
     --------------
     BuildPSAData(niscopeSys : NISCOPESys) -> PSAData:
         Returns a fresh PSAData instance from a csv file.
     """
-    def __init__(self, niscopeDataServ : NISCOPEDataServices):
+    def __init__(self, 
+                 niscopeDataServ : NISCOPEDataServices,
+                 psaDMServ : PSADataServices):
         self.logger = Logger("PSAFactory")
 
         self.niscopeDataServ = niscopeDataServ
+        self.psaDMServ       = psaDMServ
 
     def BuildPSAData(self, niscopeSys : NISCOPESys) -> PSAData:
         """
@@ -57,7 +63,6 @@ class PSAFactory():
 
         # NC Mode:
         stdMean           = lambda arr: (np.mean(arr), np.std(arr))
-        psaSimulationData = None # no simulation can be run without a csv file loaded
         sweepConf         = None # same idea
         timingConf        = TimingConf(delay=50.0, 
                                        inDelay=100.0, 
@@ -80,22 +85,38 @@ class PSAFactory():
         
         sweepMap = dict() # without loading no sweep data can be generated
         curParam = None # at initialization no csv file was loaded
-        
         NCMode = PSAMode(
             name="null-cline",
             niscopeUnion=niscopeSys.GetUnionsMap()[0], # we link the nc mode to the first union defined
             operation=stdMean,
-            psaSimulation=psaSimulationData,
+            psaSimulation=None,
             timing = timingConf,
             chnConfList=channelConfList,
             operationName="std-mean",
             sweepMap=sweepMap,
             curParam=curParam,
             tag="#NCMODE") 
+        # also create the simulation instance:
+        YMap = dict()
+        activeConf : ChannelConf
+        for activeConf in self.psaDMServ.GetActiveChannelsConfigurationList(NCMode):
+            chnId = activeConf.GetNiscopeChn().GetIndex()
+            devId = activeConf.GetNiscopeChn().GetDevice().GetId()
+            
+            YMap[(devId,chnId)] = []
+        psaSimulationData = PSASimulation(XSweeper=[],
+                               Y=YMap,
+                               XAxisName="Sweeper",
+                               status=None,
+                               stage=0,
+                               lastSValue=0,
+                               start=0,
+                               end=0)
+        NCMode.SetPsaSimulation(psaSimulationData)
+        
         psaModeMap[NCMode.GetName()] = NCMode
 
-        
-
+    
         return PSAData(curPsaMode=NCMode,
                        psaModeMap=psaModeMap)
 

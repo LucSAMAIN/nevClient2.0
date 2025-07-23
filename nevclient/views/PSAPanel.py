@@ -9,8 +9,8 @@ from nevclient.views.templates.NevPSAPlot import NevPSAPlot
 from nevclient.views.templates.NevComboBox import NevComboBox
 from nevclient.views.templates.NevButton import NevButton
 from nevclient.views.templates.NevText import NevSimpleText 
-# model.data
-from nevclient.model.config.PSA.PSAData import PSAData
+# PSA
+from nevclient.model.config.PSA.PSASimulation import PSASimulation
 from nevclient.model.config.PSA.ChannelConf import ChannelConf
 
 class PSAPanel(NevPanel):
@@ -41,7 +41,7 @@ class PSAPanel(NevPanel):
         # The graph:
         self.plot = NevPSAPlot(parent=self, 
                                 title = "PSA data graph", 
-                                XAxisName="Need to load csv file",
+                                XAxisName="Sweeper",
                                 YAxisName=psaData.GetCurPsaMode().GetOperationName(),
                                 X=[],
                                 Y=[],
@@ -75,49 +75,32 @@ class PSAPanel(NevPanel):
 
 # ──────────────────────────────────────────────── METHODS ────────────────────────────────────────────────────
 
-    def UpdatePSAData(self):
+    def UpdatePlot(self, X : list[float], Y : list[list[float]], XAxisName : str, legends : list[str], colors : list[str]):
         """
-        The UpdatePSAData method is called to update the displayed plotting data.
+        Updates the displayed plotting data.
         """
-    
-        X, Y = self.controller.GetSimulationPSAData()
-        psaMan  : PSA     = self.controller.GetPSA()
-        psaData : PSAData = psaMan.GetPSAData()
-        confs   : list    = self.controller.GetActiveChannelConf()
-        
-        Xname = psaData.GetXAxisName()
-
-        colors = [self.controller.GetCCC(conf) for conf in confs]
-        legends = self._generateLegends(confs)
-        
         self.plot.SetX(X), self.plot.SetY(Y)
-        self.plot.SetLegends(legends), self.plot.SetColors(colors), self.plot.SetXAxisName(Xname)
+        self.plot.SetLegends(legends), self.plot.SetColors(colors), self.plot.SetXAxisName(XAxisName)
         self.plot.UpdatePlot()
         
         self.Refresh()
         self.Update()
 
-    def ReplaceChoicesXAxis(self, newChoices : list[ChannelConf]):
+    def ReplaceChoicesXAxis(self, newChoices : list[str], curSimName : str):
         """
-        The ReplaceChoicesXAxis method is called by the SweeperPanel to change the choices possibilities
+        The ReplaceChoicesXAxis method is called by the SweeperPanel event handler to change the choices possibilities
         when one of the NISCOPE channels is activate / deactivate.
 
         Parameters:
         ----------
-        newChoices : list[ChannelConf]
-            A list of the new available NISCOPE channel configuration.
+        newChoices : list[str]
+        curSimName : str
+            The currently selected x axis name for the simulation
         """
 
-        # create a new one:
-        choices = self._generateLegends(newChoices)
-        self.comboBoxXAxis.Set(["Sweeper"] + choices)
-        self.comboBoxXAxis.SetSelection(0)
+        self.comboBoxXAxis.Set(newChoices)
+        self.comboBoxXAxis.SetSelection(newChoices.index(curSimName))
 
-        # update the AxisName
-        if self.controller.GetPSAData().GetXAxisName() not in choices+["Sweeper"]:
-            self.controller.GetPSAData().SetXAxisName("Sweeper")
-        # immediately update the plotting view
-        self.UpdatePSAData()
 
     
     
@@ -129,20 +112,20 @@ class PSAPanel(NevPanel):
 # ──────────────────────────────────────────────── EVENT HANDLER: ────────────────────────────────────────────────────
     
     def OnRunButton(self, e : wx.Event):
-        self.controller.RunPSA()
+        self.controller.OnPSARunButton()
+        
         e.Skip()
 
+
     def OnStopButton(self, e : wx.Event):
-        self.controller.StopPSA()
+        self.controller.OnPSAStopButton()
+
         e.Skip()
 
     def OnComboBoxXAxis(self, e : wx.Event):
         combo = e.GetEventObject()
         newAx = combo.GetStringSelection()
 
-        # update PSAData
-        self.controller.GetPSAData().SetXAxisName(newAx)
-        # immediatly update the plottin view
-        self.UpdatePSAData()
+        self.controller.OnPSAComboBoxXAxis(newAx)
 
         e.Skip()

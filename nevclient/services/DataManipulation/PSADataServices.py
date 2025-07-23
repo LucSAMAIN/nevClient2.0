@@ -11,11 +11,16 @@ from nevclient.utils.CSVWorker import CSVWorker
 from nevclient.model.config.PSA.ChannelConf import ChannelConf
 from nevclient.model.config.PSA.PSAMode import PSAMode
 from nevclient.model.config.PSA.SweepConf import SweepConf
+from nevclient.model.config.PSA.PSASimulation import PSASimulation
 # parameters
 from nevclient.model.config.Parameters.ParametersData import ParametersData
 from nevclient.model.config.Parameters.CSVParameter import CSVParameter
 # enum
 from nevclient.model.Enums.SweepDirection import SweepDirection
+# services
+from nevclient.services.DataManipulation.NISCOPEDataServices import NISCOPEDataServices
+# niscope
+from nevclient.model.hardware.NISCOPE.NISCOPESys import NISCOPESys
 
 class PSADataServices():
     """
@@ -26,6 +31,9 @@ class PSADataServices():
     GetActiveChannelsConfigurationList() -> list[ChannelConf]
         Returns a list of all the defined active channels inside the current
         psa mode.
+    GenerateLegends(self, conf : ChannelConf) -> str
+        Generates a legend for the passed channel configuration
+        instance.
 
     """
     def __init__(self):
@@ -88,11 +96,140 @@ class PSADataServices():
                                   sweepDi=SweepDirection.DOWN) # default value
             sweepMap[parameterName] = sweepConf
 
-        # updates the mode:
+        # updates the model:
         psaMode.SetSweepMap(sweepMap)
         if sweepMap:
             defaultCSVParam : CSVParameter = parametersData.GetParametersMap()[next(iter(sweepMap.keys()))]
             psaMode.SetCurParam(defaultCSVParam)
+        
+
+
+
+    def GenerateLegends(self, conf : ChannelConf) -> str:
+        """
+        Generates a legend for the passed channel configuration
+        instance.
+
+        Parameters
+        ----------
+        conf : ChannelConf
+            The conf the caller wants to generate the legend from.
+        
+        Returns
+        -------
+        str: The generated legend string
+        """
+        
+        return f"{conf.GetNiscopeChn().GetDevice().GetDeviceName()} {conf.GetNiscopeChn().GetDevice().GetId()} chn {conf.GetNiscopeChn().GetIndex()}"
+
+    def GetXData(self, psaData : PSASimulation) -> list[float]:
+        """ 
+        This function returns the correct
+        X data for plotting.
+        Either the sweeper of a Y data of one of the
+        NISCOPE active channels
+
+        Parameters
+        ----------
+        psaData : PSASimulation
+
+        Returns
+        -------
+        list[float]
+        """
+        if psaData.GetXAxisName() == "Sweeper":
+            return psaData.GetXSweeper()
+        
+        self.logger.deepDebug(f"Inside GetXData method of PSAData class, axisName:{psaData.GetXAxisName()}")
+        self.logger.deepDebug(f"Inside GetXData method of PSAData class, Y:{psaData.GetY()}")
+        deviceId, channelId = self._parseLegend(psaData.GetXAxisName())
+        if deviceId != None and channelId != None:
+            return psaData.GetY()[(deviceId, channelId)]
+        self.logger.warning("GetX method failed, returning the XSweeper...")
+        return psaData.GetXSweeper()
+    
+    def GetYData(self, psaMode : PSAMode) -> list[list[float]]:
+        """
+        This method returns the correct Y 
+        Data for plotting.
+        It uses the correct NISCOPE devices
+        ordered to returns the good data.
+
+        Parameters
+        ----------
+        psaMode : PSAMode
+
+        Returns 
+        -------
+        list[list[float]]
+        """
+        psaData : PSASimulation = psaMode.GetPsaSimulation()
+        
+        result = []
+        confs : list[ChannelConf]
+        confs = self.GetActiveChannelsConfigurationList(psaMode)
+        for conf in confs:
+            deviceId = conf.GetNiscopeChn().GetDevice().GetId()
+            channelId = conf.GetNiscopeChn().GetIndex()
+            result.append(list(map(psaMode.GetOperation(), psaData.GetY()[(deviceId, channelId)])))
+        self.logger.debug(f"Quitting the Get Y Data result : {result}")
+        return result
+    
+    def GetColor(self, conf : ChannelConf, psaSim : PSASimulation, niscopeDMServ : NISCOPEDataServices, niscopeSys : NISCOPESys) -> str:
+        """
+        Returns the associated color of the passed channel configuration instance.
+
+        Parameters
+        ----------
+        conf : ChannelConf
+        psaSim : PSASimulation
+        niscopeDMServ : NISCOPEDataServices
+        niscopeSys : NISCOPESys
+
+        Returns
+        -------
+        str: The color's string
+        """
+        chnId    = conf.GetNiscopeChn().GetIndex()
+        devId    = conf.GetNiscopeChn().GetDevice().GetId()
+        colorMap = niscopeDMServ.GetChannelColors(niscopeSys=niscopeSys)
+
+        return colorMap[devId][chnId]
+        
+        
+
+
+
+
+# ──────────────────────────────────────────────────────────── Intern methods ──────────────────────────────────────────────────────────
+    
+    def _parseLegend(self, legendStr : str) -> tuple[int,int]:
+        """
+        Helping function to recover the 
+        NISOPE's device and channel information
+        from the plot legend.
+        Legend mus have the following syntax:
+        {NISCOPE device name} {device id} chn {channel id}
+
+        Parameters
+        ----------
+        legendStr : str
+
+        Returns
+        -------
+        (int, int)
+            NISCOPE device and channel ids
+        """
+        match = re.search(r'^.*?(\S+) chn (\d+)$', legendStr)
+        if match:
+            deviceId = match.group(1)
+            channelId = match.group(2)
+            return int(deviceId), int(channelId)
+
+        self.logger.error(f"The _parseLegend was not able to correctly parsed the following passed legend: {legendStr}")
+        return None, None
+
+
 
 
     def _parseModeData(self, nc : str) -> tuple[float, float, int]:

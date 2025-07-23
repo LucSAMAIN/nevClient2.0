@@ -37,6 +37,7 @@ from nevclient.model.Enums.NISCOPEChannelVerticalRange import NISCOPEChannelVert
 from nevclient.services.DataManipulation.DAQMXDataServices import DAQMXDataServices
 from nevclient.services.DataManipulation.PSADataServices import PSADataServices
 from nevclient.services.DataManipulation.PulseDataServices import PulseDataServices
+from nevclient.services.DataManipulation.NISCOPEDataServices import NISCOPEDataServices
 from nevclient.services.Communication.DAQMXComm import DAQMXComm
 # pulses
 from nevclient.model.config.Pulse.PulseData import PulseData
@@ -49,40 +50,43 @@ class Controller():
 
     Attributes
     ----------
-    niscopeSys  : NISCOPESys
-    daqmxSys    : DAQMXSys
-    psaData     : PSAData
-    paramFac    : ParametersFactory
-    psaDMServ   : PSADataServices
-    daqmxComm   : DAQMXComm
-    pulseFac    : PulseFactory
-    pulseDMServ : PulseDataServices
+    niscopeSys    : NISCOPESys
+    daqmxSys      : DAQMXSys
+    psaData       : PSAData
+    paramFac      : ParametersFactory
+    psaDMServ     : PSADataServices
+    daqmxComm     : DAQMXComm
+    pulseFac      : PulseFactory
+    pulseDMServ   : PulseDataServices
+    niscopeDMServ : NISCOPEDataServices
     """
 
     def __init__(self,
-                 niscopeSys  : NISCOPESys,
-                 daqmxSys    : DAQMXSys,
-                 psaData     : PSAData,
-                 paramFac    : ParametersFactory,
-                 psaDMServ   : PSADataServices,
-                 daqmxComm   : DAQMXComm,
-                 daqmxDMServ : DAQMXDataServices,
-                 pulseFac    : PulseFactory,
-                 pulseDMServ : PulseDataServices):
+                 niscopeSys    : NISCOPESys,
+                 daqmxSys      : DAQMXSys,
+                 psaData       : PSAData,
+                 paramFac      : ParametersFactory,
+                 psaDMServ     : PSADataServices,
+                 daqmxComm     : DAQMXComm,
+                 daqmxDMServ   : DAQMXDataServices,
+                 pulseFac      : PulseFactory,
+                 pulseDMServ   : PulseDataServices,
+                 niscopeDMServ : NISCOPEDataServices):
         self.logger = Logger("Controller")
 
-        self.paramFac    = paramFac
-        self.pulseFac    = pulseFac
+        self.paramFac      = paramFac
+        self.pulseFac      = pulseFac
+  
+        self.niscopeSys    = niscopeSys
+        self.daqmxSys      = daqmxSys
+        self.psaData       = psaData
+   
+        self.psaDMServ     = psaDMServ
+        self.daqmxDMServ   = daqmxDMServ
+        self.pulseDMServ   = pulseDMServ
+        self.niscopeDMServ = niscopeDMServ
 
-        self.niscopeSys  = niscopeSys
-        self.daqmxSys    = daqmxSys
-        self.psaData     = psaData
- 
-        self.psaDMServ   = psaDMServ
-        self.daqmxDMServ = daqmxDMServ
-        self.pulseDMServ = pulseDMServ
-
-        self.daqmxComm   = daqmxComm
+        self.daqmxComm     = daqmxComm
         
         self.entryFrame     : EntryFrame     = None # later set
         self.parametersData : ParametersData = None # same
@@ -163,6 +167,7 @@ class Controller():
                                                                              sweepDi)
         # Pulse panel
         self.entryFrame.GetPulsePanel().UpdateOnLoadingParameters(self.pulseData)
+        
 
         
         
@@ -319,6 +324,30 @@ class Controller():
         chnConf : ChannelConf = psaMode.GetChnConfList()[chnConfId]
         # Then updates the model accordingly:
         chnConf.SetActive(checked)
+
+        # We also need to update the psa panel accordingly:
+        activeConfs = self.psaDMServ.GetActiveChannelsConfigurationList(self.psaData.GetCurPsaMode())
+        legends     = list(map(self.psaDMServ.GenerateLegends, activeConfs))
+        choices     = ["Sweeper"] + legends
+        # check if the active changement has an impact
+        # on the currenlty selected axis:
+        if self.psaData.GetCurPsaMode().GetPsaSimulation().GetXAxisName() not in choices:
+            self.psaData.GetCurPsaMode().GetPsaSimulation().SetXAxisName("Sweeper")
+        curSelectionStr = self.psaData.GetCurPsaMode().GetPsaSimulation().GetXAxisName()
+        # update the view
+        self.entryFrame.GetPSAPanel().ReplaceChoicesXAxis(choices, curSelectionStr)
+        # update the plot
+        X, Y   = self.psaDMServ.GetXData(self.psaData.GetCurPsaMode().GetPsaSimulation()), self.psaDMServ.GetYData(self.psaData.GetCurPsaMode())
+        colors = [self.psaDMServ.GetColor(conf=activeConf,
+                                          psaSim=self.psaData.GetCurPsaMode().GetPsaSimulation(), 
+                                          niscopeDMServ=self.niscopeDMServ,
+                                          niscopeSys=self.niscopeSys) for activeConf in activeConfs]
+        self.entryFrame.GetPSAPanel().GetPlot().UpdateData(X=X,
+                                                           Y=Y,
+                                                           XAxisName=curSelectionStr,
+                                                           legends=legends,
+                                                           colors=colors)
+        self.entryFrame.GetPSAPanel().GetPlot().UpdatePlot()
 
 
 
@@ -519,4 +548,38 @@ class Controller():
         
         # ---- Update the view:
         self.entryFrame.GetPulsePanel().UpdateAll(self.pulseData)
+
+    
+
+
+
+    # PSA panel
+    @log_debug_event
+    def OnPSARunButton(self):
+        pass
+
+    @log_debug_event
+    def OnPSAStopButton(self):
+        pass
+
+    @log_debug_event
+    def OnPSAComboBoxXAxis(self, axName : str):
+        # Update the model
+        self.psaData.GetCurPsaMode().GetPsaSimulation().SetXAxisName(axName)
+        
+        # Update the plot
+        activeConfs = self.psaDMServ.GetActiveChannelsConfigurationList(self.psaData.GetCurPsaMode())
+        legends     = list(map(self.psaDMServ.GenerateLegends, activeConfs))
+        curSelectionStr = self.psaData.GetCurPsaMode().GetPsaSimulation().GetXAxisName()
+        X, Y   = self.psaDMServ.GetXData(self.psaData.GetCurPsaMode().GetPsaSimulation()), self.psaDMServ.GetYData(self.psaData.GetCurPsaMode())
+        colors = [self.psaDMServ.GetColor(conf=activeConf,
+                                          psaSim=self.psaData.GetCurPsaMode().GetPsaSimulation(), 
+                                          niscopeDMServ=self.niscopeDMServ,
+                                          niscopeSys=self.niscopeSys) for activeConf in activeConfs]
+        self.entryFrame.GetPSAPanel().GetPlot().UpdateData(X=X,
+                                                           Y=Y,
+                                                           XAxisName=curSelectionStr,
+                                                           legends=legends,
+                                                           colors=colors)
+        self.entryFrame.GetPSAPanel().GetPlot().UpdatePlot()
 
