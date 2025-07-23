@@ -17,7 +17,7 @@ class PSASimulation():
     Attributes
     ----------
     XSweeper : list[float]
-    Y : dict[(devId, chnId) : list[float]]
+    Y : dict[(devId, chnId) : list[list[float]]]
         The plotting data.
     XAxisName : str
         The current selected XAxis name.
@@ -40,7 +40,7 @@ class PSASimulation():
     """
     def __init__(self, 
                  XSweeper  : list[float],
-                 Y         : dict[(int, int) : list[float]],
+                 Y         : dict[(int, int) : list[list[float]]],
                  XAxisName : str,
                  status    : PSAStatus,
                  stage     : int,
@@ -94,5 +94,5 @@ class PSASimulation():
         return self.lastSValue
     def GetXSweeper(self) -> list[float]:
         return self.XSweeper
-    def GetY(self) -> dict[(int, int) : list[float]]:
+    def GetY(self) -> dict[(int, int) : list[list[float]]]:
         return self.Y

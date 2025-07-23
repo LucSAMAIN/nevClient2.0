@@ -62,7 +62,7 @@ class PSAFactory():
         psaModeMap = dict()
 
         # NC Mode:
-        stdMean           = lambda arr: (np.mean(arr), np.std(arr))
+        mean              = lambda arr: np.mean(arr)
         sweepConf         = None # same idea
         timingConf        = TimingConf(delay=50.0, 
                                        inDelay=100.0, 
@@ -88,11 +88,11 @@ class PSAFactory():
         NCMode = PSAMode(
             name="null-cline",
             niscopeUnion=niscopeSys.GetUnionsMap()[0], # we link the nc mode to the first union defined
-            operation=stdMean,
+            operation=mean,
             psaSimulation=None,
             timing = timingConf,
             chnConfList=channelConfList,
-            operationName="std-mean",
+            operationName="mean",
             sweepMap=sweepMap,
             curParam=curParam,
             tag="#NCMODE") 

@@ -39,6 +39,24 @@ class PSADataServices():
     def __init__(self):
           self.logger = Logger("PSADataServices")
 
+    def ResetY(self, psaMode : PSAMode) -> None:
+        """
+        The ResetY method is used to reset the Y data
+        attribute of the passed PSAData instance.
+        It clears the old Y dictionnary's values
+        and replace them with empty list.
+
+        Parameters
+        ----------
+        psaMode : PSAMode
+        """
+        psaData : PSASimulation = psaMode.GetPsaSimulation()
+        newY = psaData.GetY()
+        newY.clear()
+        conf : ChannelConf
+        for conf in self.GetActiveChannelsConfigurationList(psaMode):
+            newY[(conf.GetNiscopeChn().GetDevice().GetId(), conf.GetNiscopeChn().GetIndex())] = []
+        psaData.SetY(newY)
 
     def GetActiveChannelsConfigurationList(self, psaMode : PSAMode) -> list[ChannelConf]:
         """
@@ -122,7 +140,7 @@ class PSADataServices():
         
         return f"{conf.GetNiscopeChn().GetDevice().GetDeviceName()} {conf.GetNiscopeChn().GetDevice().GetId()} chn {conf.GetNiscopeChn().GetIndex()}"
 
-    def GetXData(self, psaData : PSASimulation) -> list[float]:
+    def GetXData(self, psaMode : PSAMode) -> list[float]:
         """ 
         This function returns the correct
         X data for plotting.
@@ -131,12 +149,13 @@ class PSADataServices():
 
         Parameters
         ----------
-        psaData : PSASimulation
+        psaMode : PSAMode
 
         Returns
         -------
         list[float]
         """
+        psaData : PSASimulation = psaMode.GetPsaSimulation()
         if psaData.GetXAxisName() == "Sweeper":
             return psaData.GetXSweeper()
         
@@ -144,7 +163,7 @@ class PSADataServices():
         self.logger.deepDebug(f"Inside GetXData method of PSAData class, Y:{psaData.GetY()}")
         deviceId, channelId = self._parseLegend(psaData.GetXAxisName())
         if deviceId != None and channelId != None:
-            return psaData.GetY()[(deviceId, channelId)]
+            return list(map(psaMode.GetOperation(), psaData.GetY()[(deviceId, channelId)]))
         self.logger.warning("GetX method failed, returning the XSweeper...")
         return psaData.GetXSweeper()
     

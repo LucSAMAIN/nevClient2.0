@@ -8,6 +8,10 @@ from nevclient.utils.TCPClient import TCPClient
 # NISCOPE
 from nevclient.model.Enums.NISCOPEChannelVerticalRange import NISCOPEChannelVerticalRange
 from nevclient.model.Enums.NISCOPEChannelVerticalCoupling import NISCOPEChannelVerticalCoupling
+from nevclient.model.hardware.NISCOPE.NISCOPESys import NISCOPESys
+from nevclient.model.hardware.NISCOPE.NISCOPEUnion import NISCOPEUnion
+from nevclient.model.hardware.NISCOPE.NISCOPEChannel import NISCOPEChannel
+from nevclient.model.hardware.NISCOPE.NISCOPEDevice import NISCOPEDevice
 
 class NISCOPEComm():
     """
@@ -39,6 +43,68 @@ class NISCOPEComm():
         
         self.tcpClient = tcpClient
 
+    def SendUpdatesBeforePSA(self, 
+                          unionId    : int, 
+                          delay      : float,
+                          period     : float,
+                          sampling   : float,
+                          niscopeSys : NISCOPESys):
+        """
+        The SendUpdatesBeforePSA method is used to synchronized the NISCOPE system object
+        current state and data with the backend server by sending multiple different
+        requests:
+        - SET NSU DEVS
+        - SET NSU CHAN
+        - SET NSU DLEN
+        - SET NSU FREQ
+        
+
+        It is especially used int the PSA process when the user want to run
+        a simulation.
+
+        Parameters:
+        -----------
+        unionId  : int
+            The NISCOPE union id on which to operate the updates.
+            I am not sure I understood well how this parameter is defined in the old code.
+            To me it seems that "0" is the one value associated to NC mode.
+            It also appears to be the most important one. 
+
+        delay    : float
+        period   : float
+        sampling : float
+            These three parameters are the values defined in the timing configuration
+            of the sweeper panel. They are used to compute the new value of the 
+            union's data length, old code, IDU why :( 
+        niscopeSys : NISCOPESys
+            The currently defined NISCOPE system instance
+        """
+        self.logger.info(f"Entering the SendUpdatesBeforePSA method")
+        # (1) Sending updates to the backend server about the different devices of the union
+        union : NISCOPEUnion = niscopeSys.GetUnionsMap()[unionId]
+        devicesIDs = list(union.GetDevicesMap().keys())
+        self.logger.deepDebug(f"Inside the SendUpdatesBeforePSA method, niscope devices id list : {devicesIDs}")
+        self.SetNSUDEVS(unionId=unionId, devsIds=devicesIDs)
+        # (2) Sending updates to the backend server about the configuration of the channels
+        for deviceId in devicesIDs:
+            device : NISCOPEDevice
+            device                   = union.GetDevicesMap()[deviceId]
+            channel : NISCOPEChannel
+            deviceRanges = []
+            deviceCouplings = []
+            for channel in device.GetChannels():
+                deviceRanges.append(channel.GetVerticalRange())
+                deviceCouplings.append(channel.GetVerticalCoupling())
+
+            channelConfiguration     = list(zip(deviceCouplings, deviceRanges))
+            self.SetNSUCHAN(unionId=unionId, deviceId=deviceId, channelConf=channelConfiguration)
+        # (3) Updating the backend server about the data lenght of the union (SET NSU DLEN)
+        dlen = (period + delay) * sampling
+        self.SetNSUDLEN(unionId=unionId, dlen=dlen)
+        # (4) Updating the backend server about the frequence of the union (SET NSU FREQ)
+        self.SetNSUFREQ(unionId=unionId, freq=sampling)
+
+        self.logger.info(f"Succesfully executed the SendUpdatesBeforePSA method")
 # ──────────────────────────────────────────────────────────── API GET ────────────────────────────────────────────────────────── 
 
     def GetNISCOPEInfo(self) -> str:

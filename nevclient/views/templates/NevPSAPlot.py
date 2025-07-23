@@ -78,7 +78,8 @@ class NevPSAPlot(plot.plotcanvas.PlotCanvas):
         legends = self.legends
         nbInputs = len(Y)
 
-        
+
+
         # --- Plot creation
         line_plots = [
             plot.PolyLine(

@@ -10,6 +10,10 @@ from nevclient.utils.DummyData import DummyData
 # parameters
 from nevclient.model.config.Parameters.CSVParameter import CSVParameter
 from nevclient.model.config.PSA.SweepConf import SweepConf
+# psa
+from nevclient.model.config.PSA.PSAData import PSAData
+# services
+from nevclient.services.DataManipulation.PSADataServices import PSADataServices
 
 
 
@@ -254,8 +258,8 @@ class TCPClient:
                 deviceId = int(tokens[4])
                 channelId = int(tokens[5][:-1])
                 # Recovering the sweeper parameter value:
-                curParam     : CSVParameter = self.psa.GetCurParam()
-                sweeperData  : SweepConf    = self.psa.GetSweepMap()[curParam]
+                curParam     : CSVParameter = self.psa.GetCurPsaMode().GetCurParam()
+                sweeperData  : SweepConf    = self.psa.GetCurPsaMode().GetSweepMap()[curParam.GetName()]
                 
                 self.logger.debug(f"parsed sweeper data : start={start}, stop={end}, steps={steps}")
                 self.logger.debug("VS")
@@ -270,7 +274,7 @@ class TCPClient:
                 # And also the number of NISCOPE channels that are connected (for the plotting)
                 # I understood that everh channel we see on the gui correspond to the number
                 # of output you want to see...
-                nNiscopeChannel = len(NISCOPECConfServices().GetActiveChannelConf(self.psa))
+                nNiscopeChannel = len(PSADataServices().GetActiveChannelsConfigurationList(self.psa.GetCurPsaMode()))
 
                 self.logger.debug(f"Steps in the SET PSA cmd: {steps}")
                 
@@ -321,5 +325,5 @@ class TCPClient:
 # ─────────────────────────────────────────────── Setters ────────────────────────────────────────────────────────
 
 
-    def SettingPSA(self, newPsa : PSA):
+    def SettingPSA(self, newPsa : PSAData):
         self.psa = newPsa

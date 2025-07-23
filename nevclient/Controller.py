@@ -39,6 +39,9 @@ from nevclient.services.DataManipulation.PSADataServices import PSADataServices
 from nevclient.services.DataManipulation.PulseDataServices import PulseDataServices
 from nevclient.services.DataManipulation.NISCOPEDataServices import NISCOPEDataServices
 from nevclient.services.Communication.DAQMXComm import DAQMXComm
+from nevclient.services.Communication.NISCOPEComm import NISCOPEComm
+from nevclient.services.Communication.PSAComm import PSAComm
+from nevclient.services.Processes.PSAProcesses import PSAProcesses
 # pulses
 from nevclient.model.config.Pulse.PulseData import PulseData
 from nevclient.model.config.Pulse.PulseConf import PulseConf
@@ -59,6 +62,9 @@ class Controller():
     pulseFac      : PulseFactory
     pulseDMServ   : PulseDataServices
     niscopeDMServ : NISCOPEDataServices
+    psaProc       : PSAProcesses
+    niscopeComm   : NISCOPEComm
+    psaComm       : PSAComm
     """
 
     def __init__(self,
@@ -71,7 +77,10 @@ class Controller():
                  daqmxDMServ   : DAQMXDataServices,
                  pulseFac      : PulseFactory,
                  pulseDMServ   : PulseDataServices,
-                 niscopeDMServ : NISCOPEDataServices):
+                 niscopeDMServ : NISCOPEDataServices,
+                 psaProc       : PSAProcesses,
+                 niscopeComm   : NISCOPEComm,
+                 psaComm       : PSAComm):
         self.logger = Logger("Controller")
 
         self.paramFac      = paramFac
@@ -87,6 +96,10 @@ class Controller():
         self.niscopeDMServ = niscopeDMServ
 
         self.daqmxComm     = daqmxComm
+        self.niscopeComm   = niscopeComm
+        self.psaComm       = psaComm
+
+        self.psaProc       = psaProc
         
         self.entryFrame     : EntryFrame     = None # later set
         self.parametersData : ParametersData = None # same
@@ -337,7 +350,7 @@ class Controller():
         # update the view
         self.entryFrame.GetPSAPanel().ReplaceChoicesXAxis(choices, curSelectionStr)
         # update the plot
-        X, Y   = self.psaDMServ.GetXData(self.psaData.GetCurPsaMode().GetPsaSimulation()), self.psaDMServ.GetYData(self.psaData.GetCurPsaMode())
+        X, Y   = self.psaDMServ.GetXData(self.psaData.GetCurPsaMode()), self.psaDMServ.GetYData(self.psaData.GetCurPsaMode())
         colors = [self.psaDMServ.GetColor(conf=activeConf,
                                           psaSim=self.psaData.GetCurPsaMode().GetPsaSimulation(), 
                                           niscopeDMServ=self.niscopeDMServ,
@@ -556,11 +569,20 @@ class Controller():
     # PSA panel
     @log_debug_event
     def OnPSARunButton(self):
-        pass
+        self.psaProc.RunPSA(psa=self.psaData,
+                            daqmxSys=self.daqmxSys,
+                            niscopeSys=self.niscopeSys,
+                            psaPanel=self.entryFrame.GetPSAPanel(),
+                            psaDmServ=self.psaDMServ,
+                            daqmxComm=self.daqmxComm,
+                            daqmxDmServ=self.daqmxDMServ,
+                            niscopeComm=self.niscopeComm,
+                            niscopeDmServ=self.niscopeDMServ,
+                            psaComm=self.psaComm)
 
     @log_debug_event
     def OnPSAStopButton(self):
-        pass
+        self.psaProc.StopPSA(self.entryFrame.GetPSAPanel())
 
     @log_debug_event
     def OnPSAComboBoxXAxis(self, axName : str):
@@ -571,7 +593,7 @@ class Controller():
         activeConfs = self.psaDMServ.GetActiveChannelsConfigurationList(self.psaData.GetCurPsaMode())
         legends     = list(map(self.psaDMServ.GenerateLegends, activeConfs))
         curSelectionStr = self.psaData.GetCurPsaMode().GetPsaSimulation().GetXAxisName()
-        X, Y   = self.psaDMServ.GetXData(self.psaData.GetCurPsaMode().GetPsaSimulation()), self.psaDMServ.GetYData(self.psaData.GetCurPsaMode())
+        X, Y   = self.psaDMServ.GetXData(self.psaData.GetCurPsaMode()), self.psaDMServ.GetYData(self.psaData.GetCurPsaMode())
         colors = [self.psaDMServ.GetColor(conf=activeConf,
                                           psaSim=self.psaData.GetCurPsaMode().GetPsaSimulation(), 
                                           niscopeDMServ=self.niscopeDMServ,

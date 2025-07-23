@@ -127,6 +127,7 @@ class DummyData:
         self.maxSteps = 0
         self.nOutputs = 0 # nChannels
         self.increase = 0.0
+        self.dummyDataLength = 100
 
     # ───────────────────────────────────────────────── INTERNAL METHODS ─────────────────────────────────────────────────────
 
@@ -207,13 +208,17 @@ class DummyData:
         header = f"#PSADATA {start} {end}\n"
         data = ""
         for i in range(start, end):
+            # sweeper part:
             if self.dynamic:
                 data += str(sum(self.paramValueHistory[i])/len(self.paramValueHistory[i])) + "\n"
             else:
                 data += str(self.paramValueHistory[i]) + "\n"
+            
+            # channel part:
             dataList = self.dataHistory[i]
             # Format the list as a string like "[1.1 2.2 3.3]"
-            data += "[" + " ".join(map(str, dataList)) + "]\n"
+            for channel_data in dataList:
+                data += "[" + " ".join(map(str, channel_data)) + "]\n"
         
         end = "#OK"        
 
@@ -265,18 +270,15 @@ class DummyData:
     # ────────────────────────────────────────────── OTHER USEFUL METHODS ──────────────────────────────────────────────
 
     def _generatePSAData(self):
-        # new data generation !
-        # The new parameter value has already been generated
-        # before during the GET PSA STAT
-        num_samples = self.nOutputs
-        x = np.linspace(0, 2 * np.pi, num_samples)
-        # The core signal depends on the parameter
-        signal = self.paramValue * np.sin(x) 
-        # Add some random noise to make it look real
-        noise = np.random.normal(0, 0.1, num_samples) 
+        x = np.linspace(0, 2 * np.pi, self.dummyDataLength)
+        signal = self.paramValue * np.sin(x)
+
+        data_for_this_step = []
         
-        # We'll generate two channels of data for this example
-        waveform_ch1 = list(signal + noise)
-        
-        # Store the generated data for this step
-        self.dataHistory.append(waveform_ch1)
+        # For every niscope channel
+        for i in range(self.nOutputs):
+            noise = np.random.normal(0, 0.1, self.dummyDataLength) 
+            waveform_ch_i = list(signal + noise + (i * 0.1))
+            data_for_this_step.append(waveform_ch_i)
+
+        self.dataHistory.append(data_for_this_step)

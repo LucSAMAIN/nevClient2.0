@@ -102,3 +102,25 @@ class NISCOPEDataServices():
             channelColorsMap[deviceIndex] = ChannelColorMap
                 
         return channelColorsMap
+
+
+    def SetUnionDevices(self, unionId : int, devicesId : list[int], niscopeSys : NISCOPESys):
+        """
+        This method is used to update the NISCOPE system by setting new devices id for
+        the passed unionId. This is particullarly useful before sending updates to the
+        backend server during the PSA process so you only set active channels of the
+        niscope conf panel.
+
+        Parameters
+        ----------
+        unionId : int
+            The unionId on which to make the update
+        devicesId : list[int]
+            The list of device's Ids inside the union.
+        """
+        union = niscopeSys.GetUnionsMap()[unionId]
+        newUnionDevicesMap = {}
+        for deviceId in devicesId:
+            device = niscopeSys.GetDevicesMap()[deviceId]
+            newUnionDevicesMap[deviceId] = device
+        union.SetDevicesMap(newUnionDevicesMap)

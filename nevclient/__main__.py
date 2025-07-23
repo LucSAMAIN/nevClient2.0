@@ -15,6 +15,7 @@ from nevclient.factories.PulseFactory import PulseFactory
 # communication
 from nevclient.services.Communication.DAQMXComm import DAQMXComm
 from nevclient.services.Communication.NISCOPEComm import NISCOPEComm
+from nevclient.services.Communication.PSAComm import PSAComm
 # parsings
 from nevclient.services.Parsing.DAQMXParsing import DAQMXParsing
 from nevclient.services.Parsing.NISCOPEParsing import NISCOPEParsing
@@ -23,6 +24,8 @@ from nevclient.services.DataManipulation.NISCOPEDataServices import NISCOPEDataS
 from nevclient.services.DataManipulation.PSADataServices import PSADataServices
 from nevclient.services.DataManipulation.DAQMXDataServices import DAQMXDataServices
 from nevclient.services.DataManipulation.PulseDataServices import PulseDataServices
+# processes services
+from nevclient.services.Processes.PSAProcesses import PSAProcesses
 # tcp client
 from nevclient.utils.TCPClient import TCPClient
 # views 
@@ -46,6 +49,7 @@ class Main():
         # Creation of services:
         daqmxComm   = DAQMXComm(tcpClient=tcpClient)
         niscopeComm = NISCOPEComm(tcpClient=tcpClient)
+        psaComm     = PSAComm(tcpClient=tcpClient)
         
         daqmxPars   = DAQMXParsing()
         niscopePars = NISCOPEParsing()
@@ -54,6 +58,8 @@ class Main():
         niscopeDM   = NISCOPEDataServices()
         PSADM       = PSADataServices()
         pulseDM     = PulseDataServices()
+
+        psaProc     = PSAProcesses(tcpClient=tcpClient)
 
         # Creation of the factories:
         daqmxFac   = DAQMXFactory(daqmxComm=daqmxComm, daqmxPars=daqmxPars)
@@ -89,7 +95,10 @@ class Main():
                                 daqmxDMServ=daqmxDM,
                                 pulseFac=pulseFac,
                                 pulseDMServ=pulseDM,
-                                niscopeDMServ=niscopeDM)
+                                niscopeDMServ=niscopeDM,
+                                psaProc=psaProc,
+                                niscopeComm=niscopeComm,
+                                psaComm=psaComm)
 
         # Creation of the views:
         entryFrame = EntryFrame(parent=None, size=(1500,1000), title="Nev client",
