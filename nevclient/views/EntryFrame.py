@@ -33,7 +33,7 @@ class EntryFrame(NevFrame):
         self.menuBar = NevMenuBar()
         self.SetMenuBar(self.menuBar)
         self.statusBar = NevStatusBar(parent=self.panel)
-        self.statusBar.SetStatusText("Waiting to load the parameters...")
+        self.statusBar.SetStatusText("Waiting user to load csv parameters...")
         self.SetStatusBar(self.statusBar)
         # Parameters menu
         parametersMenu = wx.Menu()
@@ -123,6 +123,8 @@ class EntryFrame(NevFrame):
             dlg.Destroy()
             # We now let the controller handle the rest:
             self.controller.OnEntryFrameOpenItemParametersMenu(filename, dirname)
+
+            self.statusBar.SetStatusText("Parameters loaded !")
         else:
             dlg.Destroy()
 

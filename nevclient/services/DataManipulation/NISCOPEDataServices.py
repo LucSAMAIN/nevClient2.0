@@ -80,8 +80,8 @@ class NISCOPEDataServices():
                 # This ensures colors are visually distinct
                 hue = channelCounter / totalChannelsCounter
                 
-                saturation = 0.9
-                value = 0.95
+                saturation = 1.0
+                value = 0.8
                 
                 # Convert the HSV color to RGB. The values are floats from 0.0 to 1.0.
                 RGBFloat = colorsys.hsv_to_rgb(hue, saturation, value)
