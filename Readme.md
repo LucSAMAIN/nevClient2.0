@@ -11,7 +11,10 @@ This project is a modern version of the NEV client, originally developed in 2017
 
 ## 🚀 **How to Run**
 
-### 💻 **Debian Setup**
+`nevclient2.0` uses `wxPython`, which requires certain system libraries to be installed first. 
+Especially you will need to install a C and C++ compiler (i.e. gcc and g++) before trying to do the following steps. Please make sure you have one set up in your `$PATH`variable before trying to use this project.
+
+### 💻 **Debian / Fedora Setup**
 
 1.  **Set up the environment and install dependencies:**
     For a standard installation, use a virtual environment to avoid installing the package globally.
@@ -43,7 +46,6 @@ This project is a modern version of the NEV client, originally developed in 2017
     ```powershell
     python -m nevclient
     ```
-
 
 
 ### 👨‍💻 **Development Mode**
