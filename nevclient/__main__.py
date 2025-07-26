@@ -101,7 +101,7 @@ class Main():
                                 psaComm=psaComm)
 
         # Creation of the views:
-        entryFrame = EntryFrame(parent=None, size=(1500,1000), title="Nev client",
+        entryFrame = EntryFrame(parent=None, size=(1200, 700), title="Nev client",
                    controller=controller,
                    psaData=psaData,
                    colorMap=colorMap,

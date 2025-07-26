@@ -196,5 +196,9 @@ class EntryFrame(NevFrame):
         self.parametersPanel = newPanel
         self.rightSizer.Replace(oldPanel, self.parametersPanel)
         oldPanel.Destroy()
+
+        self.panel.Refresh()
+        self.panel.Layout()
+        self.panel.Update()
         
         

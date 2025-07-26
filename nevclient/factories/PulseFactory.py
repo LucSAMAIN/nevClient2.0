@@ -70,6 +70,6 @@ class PulseFactory():
         
         defaultParam : CSVParameter       = parametersData.GetParametersMap()[next(iter(paramToPulsesConfigurationMap.keys()))]
         return PulseData(nbPulses=nbPulses, 
-                  curParameterName=defaultParam, 
+                  curParameter=defaultParam, 
                   paramToPulsesConfigurationMap=paramToPulsesConfigurationMap, 
                   stimData=stimData)
