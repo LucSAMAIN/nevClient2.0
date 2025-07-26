@@ -29,7 +29,7 @@ class PulseData():
         This map helps to store the configuration of every parameters.
         Keys are the name of the parameters'name and values are the corresponding
         list of PulseConfiguration instance.
-    curParameterName                        : CSVParameter
+    curParameter                            : CSVParameter
         Same idea as before but for parameter being currently defined.
     stimData                                : StimConf
         The stimulus Data instance managing the data displayed inside the 
@@ -38,11 +38,11 @@ class PulseData():
 
     def __init__(self,
                  nbPulses                                : int,
-                 curParameterName                        : CSVParameter,
+                 curParameter                            : CSVParameter,
                  paramToPulsesConfigurationMap           : dict[str : list[PulseConf]],
                  stimData                                : StimConf):
         self.nbPulses                                = nbPulses
-        self.curParameterName                        = curParameterName
+        self.curParameter                            = curParameter
         self.paramToPulsesConfigurationMap           = paramToPulsesConfigurationMap
         self.stimData                                = stimData
 
@@ -50,7 +50,7 @@ class PulseData():
 # ────────────────────────────────────────────────── Setters ─────────────────────────────────────────────────────
 
     def SetCurParameter(self, newName : CSVParameter) -> None:
-        self.curParameterName = newName
+        self.curParameter = newName
     def SetNbPulses(self, newnbPulses : int) -> None:
         self.nbPulses = newnbPulses
     def SetParamToPulsesConfigurationMap(self, dico : dict[str : list[PulseConf]]) -> None:
@@ -61,7 +61,7 @@ class PulseData():
     def GetParamToPulsesConfigurationMap(self) -> dict[str : list[PulseConf]]:
         return self.paramToPulsesConfigurationMap
     def GetCurParameter(self) -> CSVParameter:
-        return self.curParameterName
+        return self.curParameter
     def GetNbPulses(self) -> int:
         return self.nbPulses
     def GetStimData(self) -> StimConf:

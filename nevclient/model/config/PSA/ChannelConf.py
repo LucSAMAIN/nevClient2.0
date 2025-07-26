@@ -44,7 +44,6 @@ class ChannelConf():
         self.verticalRange    = verticalRange
         self.active           = active
 
-        self.logger.deepDebug("Succesfully created an instance.")
 
 # ──────────────────────────────────────────────────────────── Getters ──────────────────────────────────────────────────────────
 
