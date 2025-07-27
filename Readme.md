@@ -47,6 +47,13 @@ Especially you will need to install a C and C++ compiler (i.e. gcc and g++) befo
     python -m nevclient
     ```
 
+### ⚙️ **System's arguments**
+
+You can passed several argument on top of the `python -m nevclient` launch command.
+
+- `--simulate` : Define the `simulate` attribute of the TCPClient's class as `True`. This command is especially used when you are in developper mode and do not have access to the hardware. The tcp client will use the DummyData class to generate fake data and still run PSA processes. For more information I suggest to look at the classes inside the `utils` directory.
+
+- `--debug` or `--deepDebug` : Allows the logger's to display information with a defined level of 'debug' or 'deepDebug'. It can be very helpful while debugging the app. It allows the developer to add logs without flooding the console with a lot of information when they are not needed by a casual user. The 'parsing' of these different parameters is the first thing done by the app. For more information look at the `__main__.py` file.  
 
 ### 👨‍💻 **Development Mode**
 
